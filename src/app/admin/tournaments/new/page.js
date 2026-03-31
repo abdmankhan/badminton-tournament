@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Users, Image, Camera } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,118 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { generateId, getInitials } from "@/lib/utils";
+import { generateId } from "@/lib/utils";
 import {
   saveTournamentLocally,
-  saveTeamLocally,
   addToSyncQueue,
   isOffline,
 } from "@/lib/offline/db";
+
+// Image Upload Component
+function ImageUpload({ value, onChange, label, size = "md" }) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef(null);
+
+  const sizeClasses = {
+    sm: "w-10 h-10",
+    md: "w-16 h-16",
+    lg: "w-20 h-20",
+  };
+
+  async function handleFileSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await res.json();
+      onChange(data.url);
+      toast.success("Image uploaded!");
+    } catch (error) {
+      toast.error("Failed to upload image");
+      console.error(error);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleRemove() {
+    onChange("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        id={`upload-${label}`}
+      />
+      
+      <div className={`${sizeClasses[size]} relative`}>
+        {value ? (
+          <div className="relative w-full h-full">
+            <img
+              src={value}
+              alt={label}
+              className="w-full h-full rounded-full object-cover border-2 border-gray-200"
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <label
+            htmlFor={`upload-${label}`}
+            className={`w-full h-full rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors ${
+              uploading ? "opacity-50 cursor-wait" : ""
+            }`}
+          >
+            {uploading ? (
+              <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+            ) : (
+              <Upload className="w-5 h-5 text-gray-400" />
+            )}
+          </label>
+        )}
+      </div>
+      <span className="text-[10px] text-gray-500">{label}</span>
+    </div>
+  );
+}
 
 export default function NewTournament() {
   const router = useRouter();
@@ -48,6 +153,21 @@ export default function NewTournament() {
       photoUrl: "",
       players: [
         { name: "", photoUrl: "" },
+        { name: "", photoUrl: "" },
+      ],
+      substitutes: [],
+    },
+    {
+      id: generateId(),
+      name: "",
+      photoUrl: "",
+      players: [
+        { name: "", photoUrl: "" },
+        { name: "", photoUrl: "" },
+      ],
+      substitutes: [],
+    },
+  ]);
         { name: "", photoUrl: "" },
       ],
       substitutes: [],
@@ -238,36 +358,6 @@ export default function NewTournament() {
     }
   };
 
-  // Photo preview component
-  const PhotoPreview = ({ url, name, size = "md" }) => {
-    const sizeClasses = {
-      sm: "w-8 h-8 text-xs",
-      md: "w-12 h-12 text-sm",
-      lg: "w-16 h-16 text-lg",
-    };
-
-    if (url) {
-      return (
-        <img
-          src={url}
-          alt={name}
-          className={`${sizeClasses[size]} rounded-full object-cover border-2 border-gray-200`}
-          onError={(e) => {
-            e.target.style.display = "none";
-          }}
-        />
-      );
-    }
-
-    return (
-      <div
-        className={`${sizeClasses[size]} rounded-full bg-gray-200 flex items-center justify-center text-gray-500 border-2 border-gray-200`}
-      >
-        {name ? getInitials(name) : <Camera className="w-4 h-4" />}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b sticky top-0 z-10">
@@ -394,36 +484,21 @@ export default function NewTournament() {
                 <div key={team.id} className="p-4 border rounded-lg bg-white">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4 flex-1 mr-4">
-                      <PhotoPreview
-                        url={team.photoUrl}
-                        name={team.name}
+                      <ImageUpload
+                        value={team.photoUrl}
+                        onChange={(url) => updateTeam(team.id, "photoUrl", url)}
+                        label="Team"
                         size="lg"
                       />
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <Label>Team {teamIndex + 1} Name</Label>
-                          <Input
-                            value={team.name}
-                            onChange={(e) =>
-                              updateTeam(team.id, "name", e.target.value)
-                            }
-                            placeholder="Enter team name"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Image className="w-3 h-3" /> Team Photo URL
-                            (optional)
-                          </Label>
-                          <Input
-                            value={team.photoUrl}
-                            onChange={(e) =>
-                              updateTeam(team.id, "photoUrl", e.target.value)
-                            }
-                            placeholder="https://example.com/team-photo.jpg"
-                            className="text-sm"
-                          />
-                        </div>
+                      <div className="flex-1">
+                        <Label>Team {teamIndex + 1} Name</Label>
+                        <Input
+                          value={team.name}
+                          onChange={(e) =>
+                            updateTeam(team.id, "name", e.target.value)
+                          }
+                          placeholder="Enter team name"
+                        />
                       </div>
                     </div>
                     <Button
@@ -439,80 +514,46 @@ export default function NewTournament() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     {/* Player 1 */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <PhotoPreview
-                        url={team.players[0].photoUrl}
-                        name={team.players[0].name}
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <ImageUpload
+                        value={team.players[0].photoUrl}
+                        onChange={(url) =>
+                          updatePlayer(team.id, 0, "photoUrl", url)
+                        }
+                        label="P1"
                         size="md"
                       />
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <Label className="text-xs">Player 1</Label>
-                          <Input
-                            value={team.players[0].name}
-                            onChange={(e) =>
-                              updatePlayer(team.id, 0, "name", e.target.value)
-                            }
-                            placeholder="Player name"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Camera className="w-3 h-3" /> Photo URL
-                          </Label>
-                          <Input
-                            value={team.players[0].photoUrl}
-                            onChange={(e) =>
-                              updatePlayer(
-                                team.id,
-                                0,
-                                "photoUrl",
-                                e.target.value,
-                              )
-                            }
-                            placeholder="https://..."
-                            className="text-xs"
-                          />
-                        </div>
+                      <div className="flex-1">
+                        <Label className="text-xs">Player 1</Label>
+                        <Input
+                          value={team.players[0].name}
+                          onChange={(e) =>
+                            updatePlayer(team.id, 0, "name", e.target.value)
+                          }
+                          placeholder="Player name"
+                        />
                       </div>
                     </div>
 
                     {/* Player 2 */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <PhotoPreview
-                        url={team.players[1].photoUrl}
-                        name={team.players[1].name}
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <ImageUpload
+                        value={team.players[1].photoUrl}
+                        onChange={(url) =>
+                          updatePlayer(team.id, 1, "photoUrl", url)
+                        }
+                        label="P2"
                         size="md"
                       />
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <Label className="text-xs">Player 2</Label>
-                          <Input
-                            value={team.players[1].name}
-                            onChange={(e) =>
-                              updatePlayer(team.id, 1, "name", e.target.value)
-                            }
-                            placeholder="Player name"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Camera className="w-3 h-3" /> Photo URL
-                          </Label>
-                          <Input
-                            value={team.players[1].photoUrl}
-                            onChange={(e) =>
-                              updatePlayer(
-                                team.id,
-                                1,
-                                "photoUrl",
-                                e.target.value,
-                              )
-                            }
-                            placeholder="https://..."
-                            className="text-xs"
-                          />
-                        </div>
+                      <div className="flex-1">
+                        <Label className="text-xs">Player 2</Label>
+                        <Input
+                          value={team.players[1].name}
+                          onChange={(e) =>
+                            updatePlayer(team.id, 1, "name", e.target.value)
+                          }
+                          placeholder="Player name"
+                        />
                       </div>
                     </div>
                   </div>
@@ -538,9 +579,12 @@ export default function NewTournament() {
                         key={subIndex}
                         className="flex items-center gap-2 mb-2 p-2 bg-gray-50 rounded"
                       >
-                        <PhotoPreview
-                          url={sub.photoUrl}
-                          name={sub.name}
+                        <ImageUpload
+                          value={sub.photoUrl}
+                          onChange={(url) =>
+                            updateSubstitute(team.id, subIndex, "photoUrl", url)
+                          }
+                          label="Sub"
                           size="sm"
                         />
                         <Input
@@ -550,24 +594,11 @@ export default function NewTournament() {
                               team.id,
                               subIndex,
                               "name",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                           placeholder="Substitute name"
                           className="flex-1"
-                        />
-                        <Input
-                          value={sub.photoUrl}
-                          onChange={(e) =>
-                            updateSubstitute(
-                              team.id,
-                              subIndex,
-                              "photoUrl",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Photo URL"
-                          className="flex-1 text-xs"
                         />
                         <Button
                           type="button"
