@@ -30,9 +30,11 @@ import {
 } from "@/lib/offline/db";
 
 // Image Upload Component
-function ImageUpload({ value, onChange, label, size = "md" }) {
+function ImageUpload({ value, onChange, label, size = "md", uniqueId }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
+  const inputId = `upload-${uniqueId || label}-${Math.random().toString(36).slice(2, 8)}`;
+  const [stableId] = useState(inputId);
 
   const sizeClasses = {
     sm: "w-10 h-10",
@@ -96,7 +98,7 @@ function ImageUpload({ value, onChange, label, size = "md" }) {
         accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
-        id={`upload-${label}`}
+        id={stableId}
       />
       
       <div className={`${sizeClasses[size]} relative`}>
@@ -117,7 +119,7 @@ function ImageUpload({ value, onChange, label, size = "md" }) {
           </div>
         ) : (
           <label
-            htmlFor={`upload-${label}`}
+            htmlFor={stableId}
             className={`w-full h-full rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors ${
               uploading ? "opacity-50 cursor-wait" : ""
             }`}
@@ -474,6 +476,7 @@ export default function NewTournament() {
                         onChange={(url) => updateTeam(team.id, "photoUrl", url)}
                         label="Team"
                         size="lg"
+                        uniqueId={`team-${team.id}`}
                       />
                       <div className="flex-1">
                         <Label>Team {teamIndex + 1} Name</Label>
@@ -507,6 +510,7 @@ export default function NewTournament() {
                         }
                         label="P1"
                         size="md"
+                        uniqueId={`player-${team.id}-0`}
                       />
                       <div className="flex-1">
                         <Label className="text-xs">Player 1</Label>
@@ -529,6 +533,7 @@ export default function NewTournament() {
                         }
                         label="P2"
                         size="md"
+                        uniqueId={`player-${team.id}-1`}
                       />
                       <div className="flex-1">
                         <Label className="text-xs">Player 2</Label>
@@ -571,6 +576,7 @@ export default function NewTournament() {
                           }
                           label="Sub"
                           size="sm"
+                          uniqueId={`sub-${team.id}-${subIndex}`}
                         />
                         <Input
                           value={sub.name}
