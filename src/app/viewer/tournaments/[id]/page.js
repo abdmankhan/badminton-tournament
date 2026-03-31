@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Users, BarChart3, Calendar, Radio, Zap, Timer } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, BarChart3, Calendar, Radio, Zap, Timer, History, PieChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -472,6 +472,34 @@ export default function ViewerTournament({ params }) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Quick Links */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <Link href={`/viewer/tournaments/${id}/analytics`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-blue-50">
+              <CardContent className="py-3 flex items-center justify-center gap-2">
+                <PieChart className="h-5 w-5 text-purple-500" />
+                <span className="font-medium text-sm">Analytics</span>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href={`/viewer/tournaments/${id}/players`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50">
+              <CardContent className="py-3 flex items-center justify-center gap-2">
+                <Users className="h-5 w-5 text-green-500" />
+                <span className="font-medium text-sm">Leaderboard</span>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href={`/viewer/tournaments/${id}/history`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-r from-orange-50 to-amber-50">
+              <CardContent className="py-3 flex items-center justify-center gap-2">
+                <History className="h-5 w-5 text-orange-500" />
+                <span className="font-medium text-sm">History</span>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
         {/* Live Match Banner */}
         {liveMatch && (
           <Card 

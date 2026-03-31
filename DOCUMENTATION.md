@@ -97,7 +97,39 @@ This application is a complete tournament management system designed for badmint
 | Player Stats | Individual points credited per match |
 | Top 2 to Finals | Automatic final generation when league completes |
 
-#### 8. Offline Support
+#### 8. Player Leaderboard & Profiles
+| Feature | Description |
+|---------|-------------|
+| Impact Score | Weighted score: points (40%) + wins (30%) + consistency (20%) + clutch (10%) |
+| Top Performers | MVP, Top Scorer, Highest Win%, Clutch King |
+| Match History | Per-player breakdown of performance |
+| Expandable Cards | Click to see detailed stats |
+
+#### 9. Tournament Analytics Dashboard
+| Feature | Description |
+|---------|-------------|
+| Match Stats | Total, completed, live, scheduled counts |
+| Scoring Trends | Average points, duration, deuce games |
+| Highlight Matches | Highest scoring, closest games |
+| Team Performance | Win rates, point differentials |
+| Score Distribution | Visual chart of final scores |
+
+#### 10. Match History & Replay
+| Feature | Description |
+|---------|-------------|
+| Completed Matches | List with scores and duration |
+| Key Moments | Deuce and game point detection |
+| Score Progression | Visual timeline of lead changes |
+| Momentum Shifts | Count of lead changes |
+
+#### 11. Dark Mode
+| Feature | Description |
+|---------|-------------|
+| Theme Toggle | Sun/Moon button in header |
+| Persistent | Saved to localStorage |
+| System Preference | Respects OS dark mode setting |
+
+#### 12. Offline Support
 | Feature | Description |
 |---------|-------------|
 | IndexedDB | Local storage with Dexie.js |
@@ -159,10 +191,30 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Image Upload
 IMGBB_API_KEY=your_imgbb_api_key
 
-# Admin Authentication
-NEXT_PUBLIC_ADMIN_USERNAME=admin
-NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_password
+# Admin Authentication (server-side - NOT exposed to browser)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_secure_password
 ```
+
+> **⚠️ Security Note**: Do NOT use `NEXT_PUBLIC_` prefix for credentials. The `ADMIN_` prefix keeps them server-side only.
+
+---
+
+## Setup New Features
+
+After cloning, run this to create the new feature pages:
+
+```bash
+node setup_features.js
+```
+
+This creates:
+- Player Stats API (`/api/tournaments/[id]/player-stats`)
+- Analytics API (`/api/tournaments/[id]/analytics`)
+- Match History API (`/api/tournaments/[id]/match-history`)
+- Player Leaderboard Page (`/viewer/tournaments/[id]/players`)
+- Analytics Dashboard (`/viewer/tournaments/[id]/analytics`)
+- Match History Page (`/viewer/tournaments/[id]/history`)
 
 ---
 

@@ -23,7 +23,8 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { clearLocalData } from "@/lib/offline/db";
 import { toast } from "sonner";
-import { Analytics } from "@vercel/analytics/next"
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export default function Home() {
   const isOnline = useOnlineStatus();
   const setIsAdmin = useTournamentStore((state) => state.setIsAdmin);
@@ -43,12 +44,12 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-green-50 to-white">
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-4xl w-full space-y-8">
-        {/* Online Status + Clear Cache */}
+        {/* Online Status + Clear Cache + Theme Toggle */}
         <div className="flex justify-center items-center gap-4">
           <div
-            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isOnline ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isOnline ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
           >
             {isOnline ? (
               <Wifi className="h-4 w-4" />
@@ -67,13 +68,14 @@ export default function Home() {
             <Trash2 className="h-3 w-3 mr-1" />
             {clearing ? "Clearing..." : "Clear Cache"}
           </Button>
+          <ThemeToggle />
         </div>
 
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <Trophy className="h-12 w-12 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
               Badminton Tournament
             </h1>
           </div>
@@ -86,21 +88,21 @@ export default function Home() {
 
         {/* Features */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="p-4 rounded-lg bg-white shadow-sm">
+          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
             <Users className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium">Team Management</p>
+            <p className="font-medium dark:text-white">Team Management</p>
           </div>
-          <div className="p-4 rounded-lg bg-white shadow-sm">
+          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
             <Trophy className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium">Live Scoring</p>
+            <p className="font-medium dark:text-white">Live Scoring</p>
           </div>
-          <div className="p-4 rounded-lg bg-white shadow-sm">
+          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
             <Shield className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium">Offline Support</p>
+            <p className="font-medium dark:text-white">Offline Support</p>
           </div>
-          <div className="p-4 rounded-lg bg-white shadow-sm">
+          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
             <Eye className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium">Leaderboards</p>
+            <p className="font-medium dark:text-white">Leaderboards</p>
           </div>
         </div>
 
@@ -153,7 +155,7 @@ export default function Home() {
                 </ul>
                 <Button
                   variant="outline"
-                  className="w-full border-blue-500 text-blue-500 hover:bg-blue-50"
+                  className="w-full border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
                   size="lg"
                 >
                   Enter as Viewer

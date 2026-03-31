@@ -1,6 +1,7 @@
 import './globals.css';
 import { Toaster } from 'sonner';
 import { Analytics } from "@vercel/analytics/next"
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 
 export const metadata = {
@@ -10,10 +11,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background antialiased">
-        {children}
-        <Toaster position="top-center" richColors />
+        <ThemeProvider>
+          {children}
+          <Toaster position="top-center" richColors />
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>
