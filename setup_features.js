@@ -12,7 +12,7 @@ console.log('Created:', playerStatsDir);
 
 // Create the route.js file
 const routeContent = `import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db/connect';
+import dbConnect from '@/lib/db/mongodb';
 import Tournament from '@/lib/db/models/Tournament';
 import Match from '@/lib/db/models/Match';
 import { calculateTournamentPlayerStats, getTopPerformers } from '@/lib/standings/playerStats';
@@ -80,7 +80,7 @@ console.log('Created:', analyticsDir);
 
 // Create analytics route.js
 const analyticsContent = `import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db/connect';
+import dbConnect from '@/lib/db/mongodb';
 import Tournament from '@/lib/db/models/Tournament';
 import Match from '@/lib/db/models/Match';
 import { calculateTournamentPlayerStats } from '@/lib/standings/playerStats';
@@ -246,7 +246,7 @@ console.log('Created:', historyDir);
 
 // Create match-history route.js
 const historyContent = `import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db/connect';
+import dbConnect from '@/lib/db/mongodb';
 import Tournament from '@/lib/db/models/Tournament';
 import Match from '@/lib/db/models/Match';
 

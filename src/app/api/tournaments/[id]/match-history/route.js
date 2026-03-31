@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db/connect';
+import dbConnect from '@/lib/db/mongodb';
 import Tournament from '@/lib/db/models/Tournament';
 import Match from '@/lib/db/models/Match';
 
