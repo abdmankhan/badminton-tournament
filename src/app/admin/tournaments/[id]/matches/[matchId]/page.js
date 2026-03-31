@@ -261,9 +261,20 @@ export default function MatchScoring({ params }) {
 
 function TeamScoreCard({ team, score, color, hasAdvantage, onPlus, onMinus, disabled }) {
   const bg = color === "blue" ? "bg-blue-600" : "bg-red-600";
+  const initials = team?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
+  
   return (
     <div className={`${bg} rounded-lg p-1.5 text-white text-center ${hasAdvantage ? "ring-2 ring-orange-400" : ""}`}>
-      <div className="text-[10px] font-medium truncate">{team?.name}</div>
+      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+        {team?.photoUrl ? (
+          <img src={team.photoUrl} alt={team.name} className="w-6 h-6 rounded-full object-cover" />
+        ) : (
+          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold">
+            {initials}
+          </div>
+        )}
+        <span className="text-[10px] font-medium truncate">{team?.name}</span>
+      </div>
       <div className="text-3xl font-bold leading-none my-1">{score}</div>
       <div className="flex justify-center gap-1.5">
         <Button size="icon" className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30" onClick={onPlus} disabled={disabled}>
@@ -282,13 +293,18 @@ function PlayerCard({ player, color, credits, onPlus, onMinus, disabled }) {
   const bg = color === "blue" ? "bg-blue-50" : "bg-red-50";
   const text = color === "blue" ? "text-blue-600" : "text-red-600";
   const btn = color === "blue" ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600";
+  const avatarBg = color === "blue" ? "bg-blue-500" : "bg-red-500";
   const initials = player.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
 
   return (
     <div className={`rounded-lg border ${border} ${bg} p-1 flex flex-col items-center justify-center`}>
-      <div className={`w-8 h-8 rounded-full ${color === "blue" ? "bg-blue-500" : "bg-red-500"} text-white flex items-center justify-center text-xs font-bold`}>
-        {initials}
-      </div>
+      {player.photoUrl ? (
+        <img src={player.photoUrl} alt={player.name} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow" />
+      ) : (
+        <div className={`w-8 h-8 rounded-full ${avatarBg} text-white flex items-center justify-center text-xs font-bold`}>
+          {initials}
+        </div>
+      )}
       <div className="text-[10px] font-medium truncate w-full text-center">{player.name}</div>
       <div className={`text-xl font-bold ${text} leading-none`}>{credits}</div>
       <div className="flex gap-1 mt-0.5">

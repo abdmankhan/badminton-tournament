@@ -43,8 +43,10 @@ export async function POST(request) {
       const team = await Team.create({
         tournamentId: tournament._id,
         name: teamData.name,
+        photoUrl: teamData.photoUrl || null,
         players: teamData.players.map((p) => ({
           name: p.name,
+          photoUrl: p.photoUrl || null,
           isSubstitute: p.isSubstitute || false,
         })),
         stats: {

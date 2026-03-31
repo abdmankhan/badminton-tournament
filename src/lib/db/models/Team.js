@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const PlayerSubSchema = new mongoose.Schema({
   name: {
@@ -7,6 +7,10 @@ const PlayerSubSchema = new mongoose.Schema({
     trim: true,
   },
   avatarUrl: {
+    type: String,
+    default: null,
+  },
+  photoUrl: {
     type: String,
     default: null,
   },
@@ -28,38 +32,45 @@ const TeamStatsSchema = new mongoose.Schema({
   efficiencyScore: { type: Number, default: 0 },
 });
 
-const TeamSchema = new mongoose.Schema({
-  tournamentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tournament',
-    required: true,
+const TeamSchema = new mongoose.Schema(
+  {
+    tournamentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tournament",
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    photoUrl: {
+      type: String,
+      default: null,
+    },
+    players: [PlayerSubSchema],
+    stats: {
+      type: TeamStatsSchema,
+      default: () => ({}),
+    },
+    rank: {
+      type: Number,
+      default: 0,
+    },
   },
-  name: {
-    type: String,
-    required: true,
-    trim: true,
+  {
+    timestamps: true,
   },
-  players: [PlayerSubSchema],
-  stats: {
-    type: TeamStatsSchema,
-    default: () => ({}),
-  },
-  rank: {
-    type: Number,
-    default: 0,
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Virtual for main players (non-substitutes)
-TeamSchema.virtual('mainPlayers').get(function() {
-  return this.players.filter(p => !p.isSubstitute);
+TeamSchema.virtual("mainPlayers").get(function () {
+  return this.players.filter((p) => !p.isSubstitute);
 });
 
 // Virtual for substitutes
-TeamSchema.virtual('substitutes').get(function() {
-  return this.players.filter(p => p.isSubstitute);
+TeamSchema.virtual("substitutes").get(function () {
+  return this.players.filter((p) => p.isSubstitute);
 });
 
-export default mongoose.models.Team || mongoose.model('Team', TeamSchema);
+export default mongoose.models.Team || mongoose.model("Team", TeamSchema);

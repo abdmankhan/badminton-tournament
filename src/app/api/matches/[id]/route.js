@@ -6,6 +6,12 @@ import { Match, Team, Tournament } from "@/lib/db/models";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const noCacheHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 export async function GET(request, { params }) {
   try {
     await connectDB();
@@ -13,15 +19,15 @@ export async function GET(request, { params }) {
 
     const match = await Match.findById(id);
     if (!match) {
-      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+      return NextResponse.json({ error: "Match not found" }, { status: 404, headers: noCacheHeaders });
     }
 
     const teamA = await Team.findById(match.teamA);
     const teamB = await Team.findById(match.teamB);
 
-    return NextResponse.json({ match, teamA, teamB });
+    return NextResponse.json({ match, teamA, teamB }, { headers: noCacheHeaders });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500, headers: noCacheHeaders });
   }
 }
 
