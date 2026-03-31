@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Play, Square, RotateCcw, Plus, Minus } from "lucide-react";
@@ -33,11 +33,49 @@ export default function MatchScoring({ params }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState({ state: "normal", isGameOver: false });
+  
+  // Sync control refs
+  const syncTimeoutRef = useRef(null);
+  const lastSyncedEventsRef = useRef(0);
 
   useEffect(() => {
     loadMatchData();
-    return () => { pauseTimer(); };
+    return () => { 
+      pauseTimer(); 
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
   }, [matchId]);
+
+  // Debounced sync to database
+  const syncToDatabase = useCallback(async () => {
+    const match = useMatchStore.getState().currentMatch;
+    if (!match || isOffline()) return;
+    
+    const events = match.events || [];
+    if (events.length === lastSyncedEventsRef.current) return;
+    
+    try {
+      await fetch(`/api/matches/${matchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          events,
+          timerState: { 
+            status: useMatchStore.getState().timerRunning ? 'running' : 'paused',
+            elapsedSeconds: useMatchStore.getState().timerSeconds
+          }
+        }),
+      });
+      lastSyncedEventsRef.current = events.length;
+    } catch (error) {
+      console.error("Sync error:", error);
+    }
+  }, [matchId]);
+
+  const scheduleSyncToDatabase = useCallback(() => {
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(syncToDatabase, 300);
+  }, [syncToDatabase]);
 
   async function loadMatchData() {
     try {
@@ -124,11 +162,15 @@ export default function MatchScoring({ params }) {
       teamName: teamData?.name,
       actionType,
     });
+    scheduleSyncToDatabase();
   }
 
   function handleUndo() {
     const undoneEvent = undoLast();
-    if (undoneEvent) toast.info("Undone", { duration: 800 });
+    if (undoneEvent) {
+      toast.info("Undone", { duration: 800 });
+      scheduleSyncToDatabase();
+    }
   }
 
   async function handleStartMatch() {
@@ -159,6 +201,7 @@ export default function MatchScoring({ params }) {
 
   const getStateDisplay = () => {
     if (gameState.state === "deuce") return { text: "DEUCE", bg: "bg-yellow-500", color: "text-black" };
+    if (gameState.state === "matchPoint") return { text: "MATCH POINT", bg: "bg-pink-600", color: "text-white" };
     if (gameState.state === "advantage") {
       return { text: `ADV ${gameState.advantageTeam === "A" ? teamA?.name : teamB?.name}`, bg: "bg-orange-500", color: "text-white" };
     }
@@ -187,20 +230,20 @@ export default function MatchScoring({ params }) {
       </header>
 
       {/* Timer Row */}
-      <div className="bg-white border-b px-2 py-1.5 flex items-center justify-center gap-2 shrink-0">
+      <div className="bg-white border-b px-3 py-2 flex items-center justify-center gap-3 shrink-0">
         {!timerRunning && !gameState.isGameOver ? (
-          <Button size="icon" className="h-9 w-9 rounded-full bg-green-500 hover:bg-green-600" onClick={handleStartMatch}>
-            <Play className="h-4 w-4 ml-0.5" />
+          <Button size="icon" className="h-12 w-12 rounded-full bg-green-500 hover:bg-green-600" onClick={handleStartMatch}>
+            <Play className="h-5 w-5 ml-0.5" />
           </Button>
         ) : !gameState.isGameOver ? (
-          <Button size="icon" className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600" onClick={pauseTimer}>
-            <Square className="h-3.5 w-3.5" />
+          <Button size="icon" className="h-12 w-12 rounded-full bg-amber-500 hover:bg-amber-600" onClick={pauseTimer}>
+            <Square className="h-4 w-4" />
           </Button>
         ) : null}
-        <div className="text-2xl font-bold tabular-nums">{formatDuration(timerSeconds)}</div>
+        <div className="text-4xl font-bold tabular-nums">{formatDuration(timerSeconds)}</div>
         {!gameState.isGameOver && currentMatch?.status === "live" && teamAScore !== teamBScore && (
-          <Button size="icon" className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600" onClick={handleEndMatch} disabled={saving}>
-            <Square className="h-3.5 w-3.5 fill-current" />
+          <Button size="icon" className="h-12 w-12 rounded-full bg-red-500 hover:bg-red-600" onClick={handleEndMatch} disabled={saving}>
+            <Square className="h-4 w-4 fill-current" />
           </Button>
         )}
       </div>
@@ -216,9 +259,9 @@ export default function MatchScoring({ params }) {
       )}
 
       {/* Scoring Area */}
-      <div className="flex-1 flex flex-col p-1.5 gap-1.5 min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col p-2 gap-2 min-h-0 overflow-hidden">
         {/* Team Scores */}
-        <div className="grid grid-cols-2 gap-1.5 shrink-0">
+        <div className="grid grid-cols-2 gap-2 shrink-0">
           <TeamScoreCard
             team={teamA}
             score={teamAScore}
@@ -240,7 +283,7 @@ export default function MatchScoring({ params }) {
         </div>
 
         {/* Player Cards */}
-        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-1.5 min-h-0">
+        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2 min-h-0">
           {teamAPlayers.slice(0, 2).map((p) => (
             <PlayerCard key={p.name} player={p} color="blue" credits={scores?.playerCredits?.[p._id || p.name] || 0}
               onPlus={() => handleScore("player", "A", p, "+1")}
@@ -264,24 +307,24 @@ function TeamScoreCard({ team, score, color, hasAdvantage, onPlus, onMinus, disa
   const initials = team?.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
   
   return (
-    <div className={`${bg} rounded-lg p-1.5 text-white text-center ${hasAdvantage ? "ring-2 ring-orange-400" : ""}`}>
-      <div className="flex items-center justify-center gap-1.5 mb-0.5">
+    <div className={`${bg} rounded-2xl p-3 text-white text-center ${hasAdvantage ? "ring-4 ring-orange-400" : ""}`}>
+      <div className="flex items-center justify-center gap-2 mb-1">
         {team?.photoUrl ? (
-          <img src={team.photoUrl} alt={team.name} className="w-6 h-6 rounded-full object-cover" />
+          <img src={team.photoUrl} alt={team.name} className="w-14 h-14 rounded-full object-cover border-2 border-white/30" />
         ) : (
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[9px] font-bold">
+          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
             {initials}
           </div>
         )}
-        <span className="text-[10px] font-medium truncate">{team?.name}</span>
       </div>
-      <div className="text-3xl font-bold leading-none my-1">{score}</div>
-      <div className="flex justify-center gap-1.5">
-        <Button size="icon" className="h-8 w-8 rounded-full bg-white/20 hover:bg-white/30" onClick={onPlus} disabled={disabled}>
-          <Plus className="h-4 w-4" />
+      <span className="text-sm font-medium truncate block">{team?.name}</span>
+      <div className="text-5xl font-bold leading-none my-2">{score}</div>
+      <div className="flex justify-center gap-3">
+        <Button size="icon" className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30" onClick={onPlus} disabled={disabled}>
+          <Plus className="h-6 w-6" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-white/60 hover:bg-white/10" onClick={onMinus} disabled={disabled || score <= 0}>
-          <Minus className="h-4 w-4" />
+        <Button size="icon" variant="ghost" className="h-12 w-12 rounded-full text-white/60 hover:bg-white/10" onClick={onMinus} disabled={disabled || score <= 0}>
+          <Minus className="h-6 w-6" />
         </Button>
       </div>
     </div>
@@ -297,22 +340,22 @@ function PlayerCard({ player, color, credits, onPlus, onMinus, disabled }) {
   const initials = player.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
 
   return (
-    <div className={`rounded-lg border ${border} ${bg} p-1 flex flex-col items-center justify-center`}>
+    <div className={`rounded-2xl border-2 ${border} ${bg} p-2 flex flex-col items-center justify-center`}>
       {player.photoUrl ? (
-        <img src={player.photoUrl} alt={player.name} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow" />
+        <img src={player.photoUrl} alt={player.name} className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-lg" />
       ) : (
-        <div className={`w-8 h-8 rounded-full ${avatarBg} text-white flex items-center justify-center text-xs font-bold`}>
+        <div className={`w-14 h-14 rounded-full ${avatarBg} text-white flex items-center justify-center text-lg font-bold`}>
           {initials}
         </div>
       )}
-      <div className="text-[10px] font-medium truncate w-full text-center">{player.name}</div>
-      <div className={`text-xl font-bold ${text} leading-none`}>{credits}</div>
-      <div className="flex gap-1 mt-0.5">
-        <Button size="icon" className={`h-7 w-7 rounded-full ${btn} text-white`} onClick={onPlus} disabled={disabled}>
-          <Plus className="h-3 w-3" />
+      <div className="text-sm font-medium truncate w-full text-center mt-1">{player.name}</div>
+      <div className={`text-3xl font-bold ${text} leading-none mt-1`}>{credits}</div>
+      <div className="flex gap-2 mt-2">
+        <Button size="icon" className={`h-10 w-10 rounded-full ${btn} text-white`} onClick={onPlus} disabled={disabled}>
+          <Plus className="h-5 w-5" />
         </Button>
-        <Button size="icon" variant="outline" className="h-7 w-7 rounded-full" onClick={onMinus} disabled={disabled || credits <= 0}>
-          <Minus className="h-3 w-3" />
+        <Button size="icon" variant="outline" className="h-10 w-10 rounded-full" onClick={onMinus} disabled={disabled || credits <= 0}>
+          <Minus className="h-5 w-5" />
         </Button>
       </div>
     </div>

@@ -135,6 +135,8 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
     switch (gameState.state) {
       case 'deuce':
         return <Badge className="bg-yellow-500 text-black animate-pulse text-lg px-4 py-1">⚔️ DEUCE</Badge>;
+      case 'matchPoint':
+        return <Badge className="bg-pink-600 text-white animate-pulse text-lg px-4 py-1">🎯 MATCH POINT 29-29</Badge>;
       case 'advantage':
         return (
           <Badge className="bg-orange-500 text-white animate-pulse text-lg px-4 py-1">

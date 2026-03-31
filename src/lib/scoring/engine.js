@@ -4,10 +4,11 @@ import { generateId } from "@/lib/utils";
  * Badminton scoring rules:
  * - Game is played to 21 points
  * - Must win by 2 points (deuce at 20-20)
- * - No maximum - deuce continues indefinitely until 2-point lead
+ * - At 29-29, next point wins (30-point cap - official BWF rule)
  */
 export const GAME_POINT = 21;
 export const DEUCE_POINT = 20;
+export const MAX_POINT = 30;
 
 /**
  * Creates a score event
@@ -37,11 +38,24 @@ export function createScoreEvent({
 
 /**
  * Determines the game state (normal, game point, deuce, advantage, won)
+ * Official BWF rules:
+ * - First to 21 wins with 2+ point lead
+ * - At 20-20, deuce begins (need 2-point lead)
+ * - At 29-29, next point wins (30-point cap)
  */
 export function getGameState(teamAScore, teamBScore) {
   const maxScore = Math.max(teamAScore, teamBScore);
   const minScore = Math.min(teamAScore, teamBScore);
   const diff = maxScore - minScore;
+
+  // 30-point cap: at 30, that team wins (29-29 situation, next point wins)
+  if (maxScore >= MAX_POINT) {
+    return {
+      state: "won",
+      winner: teamAScore > teamBScore ? "A" : "B",
+      isGameOver: true,
+    };
+  }
 
   // Win: reached at least 21 AND has 2+ point lead
   if (maxScore >= GAME_POINT && diff >= 2) {
@@ -54,6 +68,13 @@ export function getGameState(teamAScore, teamBScore) {
 
   // Both at 20+ (deuce territory)
   if (teamAScore >= DEUCE_POINT && teamBScore >= DEUCE_POINT) {
+    // At 29-29, it's match point for both (next point wins)
+    if (teamAScore === 29 && teamBScore === 29) {
+      return {
+        state: "matchPoint",
+        isGameOver: false,
+      };
+    }
     // Tied = deuce
     if (diff === 0) {
       return {
