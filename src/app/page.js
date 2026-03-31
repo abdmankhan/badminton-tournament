@@ -23,7 +23,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { clearLocalData } from "@/lib/offline/db";
 import { toast } from "sonner";
-
+import { Analytics } from "@vercel/analytics/next"
 export default function Home() {
   const isOnline = useOnlineStatus();
   const setIsAdmin = useTournamentStore((state) => state.setIsAdmin);
