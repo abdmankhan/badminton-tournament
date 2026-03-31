@@ -1,12 +1,20 @@
-// Simple auth utilities for admin access
-// Credentials are stored in environment variables
+// Auth utilities - client side only handles session storage
+// Actual credential verification happens server-side via /api/auth
 
-const ADMIN_USERNAME = process.env.NEXT_PUBLIC_ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
 const AUTH_KEY = "badminton_admin_auth";
 
-export function verifyCredentials(username, password) {
-  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
+export async function verifyCredentials(username, password) {
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
 }
 
 export function setAuthSession() {

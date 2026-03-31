@@ -24,9 +24,10 @@ function LoginForm({ onSuccess }) {
   async function handleLogin(e) {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 400));
 
-    if (verifyCredentials(username, password)) {
+    const isValid = await verifyCredentials(username, password);
+    
+    if (isValid) {
       setAuthSession();
       toast.success('🎉 Welcome, Admin!', { duration: 2000 });
       onSuccess();
