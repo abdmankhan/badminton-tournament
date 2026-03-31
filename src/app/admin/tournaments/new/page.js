@@ -168,21 +168,6 @@ export default function NewTournament() {
       substitutes: [],
     },
   ]);
-        { name: "", photoUrl: "" },
-      ],
-      substitutes: [],
-    },
-    {
-      id: generateId(),
-      name: "",
-      photoUrl: "",
-      players: [
-        { name: "", photoUrl: "" },
-        { name: "", photoUrl: "" },
-      ],
-      substitutes: [],
-    },
-  ]);
 
   const addTeam = () => {
     setTeams([
