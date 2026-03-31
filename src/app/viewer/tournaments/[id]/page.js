@@ -160,16 +160,35 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
     }
   };
 
+  // Multi-set support
+  const isFinal = match.matchType === 'final';
+  const totalSets = match.setCount || 1;
+  const currentSetNum = match.currentSet || 1;
+  const completedSets = (match.sets || []).filter(s => s.isComplete);
+  const setsWonA = completedSets.filter(s => 
+    s.winnerId === teamA._id || s.winnerId?.toString() === teamA._id?.toString()
+  ).length;
+  const setsWonB = completedSets.filter(s => 
+    s.winnerId === teamB._id || s.winnerId?.toString() === teamB._id?.toString()
+  ).length;
+
   return (
-    <div className="h-[100dvh] flex flex-col bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden">
+    <div className={`h-[100dvh] flex flex-col text-white overflow-hidden ${
+      isFinal 
+        ? 'bg-gradient-to-b from-amber-900 via-orange-900 to-red-900' 
+        : 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900'
+    }`}>
       {/* Header */}
-      <div className="flex-shrink-0 bg-black/40 px-3 py-2 flex items-center justify-between">
+      <div className={`flex-shrink-0 px-3 py-2 flex items-center justify-between ${
+        isFinal ? 'bg-gradient-to-r from-yellow-600/50 to-amber-600/50' : 'bg-black/40'
+      }`}>
         <div className="flex items-center gap-2">
           <Badge variant="destructive" className="animate-pulse flex items-center gap-1">
             <Radio className="h-3 w-3" /> LIVE
           </Badge>
           <span className="text-sm text-gray-300">
-            Match #{match.matchNumber} • {match.matchType === 'final' ? '🏆 FINAL' : 'League'}
+            {isFinal ? '🏆 GRAND FINAL' : `Match #${match.matchNumber}`}
+            {totalSets > 1 && ` • Set ${currentSetNum}/${totalSets}`}
           </span>
         </div>
         <div className="flex items-center gap-1 text-lg font-mono bg-gray-800 px-3 py-1 rounded">
@@ -177,6 +196,23 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
           <span className="text-red-400">{formatDuration(elapsedSeconds)}</span>
         </div>
       </div>
+
+      {/* Sets Score for Finals */}
+      {totalSets > 1 && (
+        <div className={`flex-shrink-0 px-4 py-2 flex items-center justify-center gap-6 ${
+          isFinal ? 'bg-gradient-to-r from-yellow-700/30 to-amber-700/30' : 'bg-gray-800/50'
+        }`}>
+          <div className="text-center">
+            <div className="text-xs opacity-70">{teamA.name}</div>
+            <div className="text-3xl font-bold">{setsWonA}</div>
+          </div>
+          <div className="text-sm opacity-50">SETS</div>
+          <div className="text-center">
+            <div className="text-xs opacity-70">{teamB.name}</div>
+            <div className="text-3xl font-bold">{setsWonB}</div>
+          </div>
+        </div>
+      )}
 
       {/* Game State Banner */}
       {gameState.state !== 'normal' && (
@@ -200,6 +236,13 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
               </div>
             )}
             <div className="text-xs text-gray-300 truncate">{teamA.name}</div>
+            {totalSets > 1 && (
+              <div className="flex justify-center gap-1 my-1">
+                {Array.from({ length: totalSets }).map((_, i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full ${i < setsWonA ? 'bg-yellow-400' : 'bg-white/20'}`} />
+                ))}
+              </div>
+            )}
             <div className="text-5xl font-bold mt-1">{teamAScore}</div>
           </div>
 
@@ -220,6 +263,13 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
               </div>
             )}
             <div className="text-xs text-gray-300 truncate">{teamB.name}</div>
+            {totalSets > 1 && (
+              <div className="flex justify-center gap-1 my-1">
+                {Array.from({ length: totalSets }).map((_, i) => (
+                  <div key={i} className={`w-2 h-2 rounded-full ${i < setsWonB ? 'bg-yellow-400' : 'bg-white/20'}`} />
+                ))}
+              </div>
+            )}
             <div className="text-5xl font-bold mt-1">{teamBScore}</div>
           </div>
         </div>
