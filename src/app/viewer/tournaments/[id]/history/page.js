@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, History, Trophy, Clock, TrendingUp, 
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function MatchHistoryPage({ params }) {
-  const { id } = use(params);
+  const { id } = params;
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedMatch, setExpandedMatch] = useState(null);

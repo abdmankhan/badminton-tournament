@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, BarChart3, Trophy, Target, Clock, 
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function AnalyticsPage({ params }) {
-  const { id } = use(params);
+  const { id } = params;
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 

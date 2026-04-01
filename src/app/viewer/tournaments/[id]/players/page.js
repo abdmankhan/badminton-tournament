@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, Trophy, Target, TrendingUp, Medal, 
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function PlayersPage({ params }) {
-  const { id } = use(params);
+  const { id } = params;
   const [playerStats, setPlayerStats] = useState([]);
   const [topPerformers, setTopPerformers] = useState(null);
   const [loading, setLoading] = useState(true);
