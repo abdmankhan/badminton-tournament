@@ -601,12 +601,23 @@ export default function ViewerTournament({ params }) {
                     const teamAData = teams.find(t => t._id?.toString() === match.teamA?.toString());
                     const teamBData = teams.find(t => t._id?.toString() === match.teamB?.toString());
                     const isLive = match.status === 'live';
+                    const isCompleted = match.status === 'completed';
+                    
+                    // Format match duration
+                    const formatMatchDuration = (seconds) => {
+                      if (!seconds) return '';
+                      const mins = Math.floor(seconds / 60);
+                      const secs = seconds % 60;
+                      return `${mins}:${secs.toString().padStart(2, '0')}`;
+                    };
+                    const duration = match.timerState?.elapsedSeconds || (match.durationMinutes ? match.durationMinutes * 60 : 0);
                     
                     return (
                       <div
                         key={match._id}
                         className={`flex items-center justify-between p-4 border rounded-lg ${
-                          isLive ? 'border-red-500 bg-red-50 cursor-pointer' : ''
+                          isLive ? 'border-red-500 bg-red-50 cursor-pointer' : 
+                          isCompleted ? 'bg-green-50/30' : ''
                         }`}
                         onClick={() => isLive && setShowLiveMatch(true)}
                       >
@@ -624,7 +635,7 @@ export default function ViewerTournament({ params }) {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          {match.status === 'completed' && match.sets && (
+                          {isCompleted && match.sets && (
                             <div className="text-right">
                               <div className={`font-mono ${match.winnerId?.toString() === teamAData?._id?.toString() ? 'font-bold' : ''}`}>
                                 {match.sets[0]?.teamAScore || 0}
@@ -640,13 +651,21 @@ export default function ViewerTournament({ params }) {
                               <div className="font-mono text-red-600">{match.sets[0]?.teamBScore || 0}</div>
                             </div>
                           )}
-                          <Badge variant={
-                            match.status === 'completed' ? 'success' :
-                            match.status === 'live' ? 'destructive' :
-                            'secondary'
-                          } className={isLive ? 'animate-pulse' : ''}>
-                            {match.status === 'live' ? '🔴 LIVE' : match.status}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant={
+                              isCompleted ? 'success' :
+                              isLive ? 'destructive' :
+                              'secondary'
+                            } className={isLive ? 'animate-pulse' : ''}>
+                              {isLive ? '🔴 LIVE' : match.status}
+                            </Badge>
+                            {isCompleted && duration > 0 && (
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <Timer className="h-3 w-3" />
+                                {formatMatchDuration(duration)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );

@@ -23,7 +23,6 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useTournamentStore } from "@/stores/tournamentStore";
 import { clearLocalData } from "@/lib/offline/db";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Home() {
   const isOnline = useOnlineStatus();
@@ -44,12 +43,12 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-green-50 to-white">
       <div className="max-w-4xl w-full space-y-8">
-        {/* Online Status + Clear Cache + Theme Toggle */}
+        {/* Online Status + Clear Cache */}
         <div className="flex justify-center items-center gap-4">
           <div
-            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isOnline ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${isOnline ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
           >
             {isOnline ? (
               <Wifi className="h-4 w-4" />
@@ -63,23 +62,22 @@ export default function Home() {
             size="sm"
             onClick={handleClearCache}
             disabled={clearing}
-            className="text-xs text-muted-foreground hover:text-destructive"
+            className="text-xs text-gray-500 hover:text-red-500"
           >
             <Trash2 className="h-3 w-3 mr-1" />
             {clearing ? "Clearing..." : "Clear Cache"}
           </Button>
-          <ThemeToggle />
         </div>
 
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <Trophy className="h-12 w-12 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
+            <Trophy className="h-12 w-12 text-green-600" />
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
               Badminton Tournament - NIT Warangal
             </h1>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Complete tournament management system for doubles badminton. Create
             tournaments, score matches live, track standings, and view player
             statistics.
@@ -88,65 +86,65 @@ export default function Home() {
 
         {/* Features */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-            <Users className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium dark:text-white">Team Management</p>
+          <div className="p-4 rounded-lg bg-white shadow-sm border">
+            <Users className="h-8 w-8 mx-auto text-green-600 mb-2" />
+            <p className="font-medium text-gray-900">Team Management</p>
           </div>
-          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-            <Trophy className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium dark:text-white">Live Scoring</p>
+          <div className="p-4 rounded-lg bg-white shadow-sm border">
+            <Trophy className="h-8 w-8 mx-auto text-green-600 mb-2" />
+            <p className="font-medium text-gray-900">Live Scoring</p>
           </div>
-          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-            <Shield className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium dark:text-white">Offline Support</p>
+          <div className="p-4 rounded-lg bg-white shadow-sm border">
+            <Shield className="h-8 w-8 mx-auto text-green-600 mb-2" />
+            <p className="font-medium text-gray-900">Offline Support</p>
           </div>
-          <div className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
-            <Eye className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="font-medium dark:text-white">Leaderboards</p>
+          <div className="p-4 rounded-lg bg-white shadow-sm border">
+            <Eye className="h-8 w-8 mx-auto text-green-600 mb-2" />
+            <p className="font-medium text-gray-900">Leaderboards</p>
           </div>
         </div>
 
         {/* Mode Selection */}
         <div className="grid md:grid-cols-2 gap-6 pt-8">
-          <Card className="border-2 hover:border-primary transition-colors">
+          <Card className="border-2 hover:border-green-500 transition-colors bg-white">
             <Link href="/admin" onClick={() => setIsAdmin(true)}>
               <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-8 w-8 text-primary" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                  <Shield className="h-8 w-8 text-green-600" />
                 </div>
-                <CardTitle className="text-2xl">Admin Mode</CardTitle>
+                <CardTitle className="text-2xl text-gray-900">Admin Mode</CardTitle>
                 <CardDescription>
                   Full access to manage tournaments
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <ul className="text-sm text-muted-foreground space-y-1 mb-4">
+                <ul className="text-sm text-gray-600 space-y-1 mb-4">
                   <li>✓ Create & manage tournaments</li>
                   <li>✓ Add teams and players</li>
                   <li>✓ Score matches live</li>
                   <li>✓ Undo/correct scores</li>
                   <li>✓ Complete tournament control</li>
                 </ul>
-                <Button className="w-full" size="lg">
+                <Button className="w-full bg-green-600 hover:bg-green-700" size="lg">
                   Enter as Admin
                 </Button>
               </CardContent>
             </Link>
           </Card>
 
-          <Card className="border-2 hover:border-blue-500 transition-colors">
+          <Card className="border-2 hover:border-blue-500 transition-colors bg-white">
             <Link href="/viewer" onClick={() => setIsAdmin(false)}>
               <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/10 flex items-center justify-center">
-                  <Eye className="h-8 w-8 text-blue-500" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Eye className="h-8 w-8 text-blue-600" />
                 </div>
-                <CardTitle className="text-2xl">Viewer Mode</CardTitle>
+                <CardTitle className="text-2xl text-gray-900">Viewer Mode</CardTitle>
                 <CardDescription>
                   Watch tournaments and view stats
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
-                <ul className="text-sm text-muted-foreground space-y-1 mb-4">
+                <ul className="text-sm text-gray-600 space-y-1 mb-4">
                   <li>✓ View live matches</li>
                   <li>✓ See team standings</li>
                   <li>✓ Track player statistics</li>
@@ -155,7 +153,7 @@ export default function Home() {
                 </ul>
                 <Button
                   variant="outline"
-                  className="w-full border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  className="w-full border-blue-500 text-blue-600 hover:bg-blue-50"
                   size="lg"
                 >
                   Enter as Viewer
@@ -166,7 +164,7 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="text-center text-sm text-muted-foreground pt-8">
+        <footer className="text-center text-sm text-gray-500 pt-8">
           <p>Works offline • Auto-syncs when connected • Mobile-friendly</p>
         </footer>
       </div>
