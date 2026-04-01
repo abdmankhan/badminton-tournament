@@ -472,7 +472,7 @@ export default function ViewerTournament({ params }) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Quick Links */}
+        {/* Quick Links - Temporarily hidden
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Link href={`/viewer/tournaments/${id}/analytics`}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-blue-50">
@@ -499,6 +499,7 @@ export default function ViewerTournament({ params }) {
             </Card>
           </Link>
         </div>
+        */}
 
         {/* Live Match Banner */}
         {liveMatch && (

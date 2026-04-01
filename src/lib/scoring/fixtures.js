@@ -1,23 +1,70 @@
 import { generateId } from '@/lib/utils';
 
 /**
- * Generate round-robin fixtures for N teams
- * Returns array of match pairings [{teamA, teamB}]
+ * Generate round-robin fixtures for N teams with proper rest scheduling
+ * Uses the "circle method" algorithm to ensure each team gets adequate rest
+ * 
+ * For 6 teams (a,b,c,d,e,f):
+ * Round 1: a-b, c-d, e-f (all teams play once, then rest)
+ * Round 2: a-c, b-e, d-f
+ * etc.
+ * 
+ * This ensures no team plays back-to-back matches
  */
 export function generateRoundRobinFixtures(teamIds) {
-  const fixtures = [];
   const n = teamIds.length;
-
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      fixtures.push({
-        teamA: teamIds[i],
-        teamB: teamIds[j],
-        matchNumber: fixtures.length + 1,
-      });
-    }
+  
+  if (n < 2) return [];
+  if (n === 2) {
+    return [{
+      teamA: teamIds[0],
+      teamB: teamIds[1],
+      matchNumber: 1,
+    }];
   }
-
+  
+  // For odd number of teams, add a "bye" placeholder
+  const teams = [...teamIds];
+  const hasBye = n % 2 !== 0;
+  if (hasBye) {
+    teams.push(null); // null represents a bye
+  }
+  
+  const numTeams = teams.length;
+  const numRounds = numTeams - 1;
+  const matchesPerRound = numTeams / 2;
+  
+  const fixtures = [];
+  
+  // Circle method: fix one team, rotate the rest
+  // Team at index 0 is fixed, others rotate clockwise
+  const rotatingTeams = teams.slice(1);
+  
+  for (let round = 0; round < numRounds; round++) {
+    // Current arrangement for this round
+    const roundTeams = [teams[0], ...rotatingTeams];
+    
+    // Generate matches for this round
+    for (let match = 0; match < matchesPerRound; match++) {
+      const teamA = roundTeams[match];
+      const teamB = roundTeams[numTeams - 1 - match];
+      
+      // Skip if either team is a bye (null)
+      if (teamA !== null && teamB !== null) {
+        fixtures.push({
+          teamA,
+          teamB,
+          matchNumber: fixtures.length + 1,
+          round: round + 1,
+        });
+      }
+    }
+    
+    // Rotate: move last element to position 1
+    const lastTeam = rotatingTeams.pop();
+    rotatingTeams.unshift(lastTeam);
+  }
+  
   return fixtures;
 }
 
@@ -32,6 +79,7 @@ export function createMatchesFromFixtures(fixtures, tournamentId, setCount = 1) 
     teamB: fixture.teamB,
     matchType: 'league',
     matchNumber: idx + 1,
+    round: fixture.round,
     setCount,
     currentSet: 1,
     status: 'scheduled',

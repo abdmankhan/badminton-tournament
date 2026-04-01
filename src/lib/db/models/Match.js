@@ -85,6 +85,10 @@ const MatchSchema = new mongoose.Schema({
     type: Number,
     default: 1,
   },
+  round: {
+    type: Number,
+    default: 1,
+  },
   setCount: {
     type: Number,
     default: 1,
