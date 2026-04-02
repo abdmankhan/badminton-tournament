@@ -12,10 +12,44 @@ const noCacheHeaders = {
   'Expires': '0',
 };
 
+// In-memory viewer tracking (simple approach - works for single instance)
+// Key: matchId, Value: Map of viewerId -> lastSeenTimestamp
+const activeViewers = new Map();
+const VIEWER_TIMEOUT = 12000; // 12 seconds timeout
+
+function cleanupAndCountViewers(matchId) {
+  const viewers = activeViewers.get(matchId);
+  if (!viewers) return 0;
+  
+  const now = Date.now();
+  for (const [viewerId, lastSeen] of viewers.entries()) {
+    if (now - lastSeen > VIEWER_TIMEOUT) {
+      viewers.delete(viewerId);
+    }
+  }
+  return viewers.size;
+}
+
+function registerViewer(matchId, viewerId) {
+  if (!viewerId) return;
+  if (!activeViewers.has(matchId)) {
+    activeViewers.set(matchId, new Map());
+  }
+  activeViewers.get(matchId).set(viewerId, Date.now());
+}
+
 export async function GET(request, { params }) {
   try {
     await connectDB();
     const { id } = await params;
+    
+    // Check for viewer heartbeat
+    const url = new URL(request.url);
+    const viewerId = url.searchParams.get('viewerId');
+    if (viewerId) {
+      registerViewer(id, viewerId);
+    }
+    const viewerCount = cleanupAndCountViewers(id);
 
     const match = await Match.findById(id);
     if (!match) {
@@ -25,7 +59,7 @@ export async function GET(request, { params }) {
     const teamA = await Team.findById(match.teamA);
     const teamB = await Team.findById(match.teamB);
 
-    return NextResponse.json({ match, teamA, teamB }, { headers: noCacheHeaders });
+    return NextResponse.json({ match, teamA, teamB, viewerCount }, { headers: noCacheHeaders });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500, headers: noCacheHeaders });
   }

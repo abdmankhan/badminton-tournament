@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Users, BarChart3, Calendar, Radio, Zap, Timer, History, PieChart } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, BarChart3, Calendar, Radio, Zap, Timer, History, PieChart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,108 @@ import { calculateStandings } from '@/lib/standings/calculator';
 import { getGameState, calculateScoresFromEvents } from '@/lib/scoring/engine';
 import { getInitials, formatDuration, generatePlayerCommentary, generateTeamCommentary, generateStateCommentary } from '@/lib/utils';
 
+// Score Animation Overlay Component
+function ScoreAnimation({ event, teamA, teamB, onComplete }) {
+  const [visible, setVisible] = useState(true);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onComplete?.();
+    }, 1200); // Show for 1.2 seconds
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+  
+  if (!visible || !event) return null;
+  
+  const isTeamA = event.teamId === teamA?._id || event.teamId?.toString() === teamA?._id?.toString();
+  const teamName = isTeamA ? teamA?.name : teamB?.name;
+  const playerName = event.actorType === 'player' ? event.playerName : null;
+  const isPlus = event.actionType === '+1';
+  
+  // Team colors
+  const bgColor = isTeamA 
+    ? 'from-blue-600 via-blue-500 to-blue-600' 
+    : 'from-red-600 via-red-500 to-red-600';
+  const emojis = ['🏸', '🔥', '⚡', '💪', '🎯'];
+  const emoji = isPlus ? emojis[Math.floor(Math.random() * emojis.length)] : '↩️';
+  
+  return (
+    <div 
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br ${bgColor}`}
+      style={{
+        animation: 'fadeInScale 0.2s ease-out forwards',
+      }}
+    >
+      <style jsx>{`
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounceEmoji {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      
+      <div 
+        className="text-center text-white"
+        style={{ animation: 'slideUp 0.3s ease-out forwards' }}
+      >
+        {/* Big emoji */}
+        <div 
+          className="text-8xl mb-4"
+          style={{ animation: 'bounceEmoji 0.6s ease-in-out infinite' }}
+        >
+          {emoji}
+        </div>
+        
+        {/* Score change */}
+        <div className="text-6xl font-black mb-2 drop-shadow-lg">
+          {isPlus ? '+1' : '-1'}
+        </div>
+        
+        {/* Team name */}
+        <div className="text-3xl font-bold mb-1 drop-shadow-md">{teamName}</div>
+        
+        {/* Player name if credited */}
+        {playerName && (
+          <div className="text-xl opacity-90 flex items-center justify-center gap-2">
+            <span>⭐</span>
+            <span>{playerName}</span>
+            <span>⭐</span>
+          </div>
+        )}
+      </div>
+      
+      {/* Decorative sparkles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute text-3xl"
+            style={{
+              left: `${10 + (i * 12)}%`,
+              top: `${20 + (i % 3) * 25}%`,
+              animation: `sparkle 0.8s ease-in-out ${i * 0.1}s infinite`,
+            }}
+          >
+            {['✨', '🏸', '⭐', '💫'][i % 4]}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Live Match Viewer Component
 function LiveMatchViewer({ matchId, teams, onNoMatch }) {
   const [match, setMatch] = useState(null);
@@ -18,12 +120,21 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
   const [teamB, setTeamB] = useState(null);
   const [commentary, setCommentary] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewerCount, setViewerCount] = useState(0);
+  const [scoreAnimation, setScoreAnimation] = useState(null);
   const prevEventsRef = useRef([]);
   const commentaryRef = useRef(null);
+  const viewerIdRef = useRef(null);
+
+  // Generate unique viewer ID on mount
+  useEffect(() => {
+    viewerIdRef.current = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
 
   const fetchMatch = useCallback(async () => {
     try {
-      const res = await fetch(`/api/matches/${matchId}`, {
+      const viewerId = viewerIdRef.current;
+      const res = await fetch(`/api/matches/${matchId}?viewerId=${viewerId}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' }
       });
@@ -32,6 +143,11 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
         return;
       }
       const data = await res.json();
+      
+      // Update viewer count
+      if (data.viewerCount !== undefined) {
+        setViewerCount(data.viewerCount);
+      }
       
       if (data.match?.status !== 'live') {
         onNoMatch?.();
@@ -46,6 +162,16 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
         const addedEvents = newEvents.slice(prevLen);
         const teamAName = data.teamA?.name || 'Team A';
         const teamBName = data.teamB?.name || 'Team B';
+        
+        // Show score animation for the latest event (only +1 actions, not undos)
+        const latestEvent = addedEvents[addedEvents.length - 1];
+        if (latestEvent && !latestEvent.undone) {
+          setScoreAnimation({
+            ...latestEvent,
+            teamAData: data.teamA,
+            teamBData: data.teamB,
+          });
+        }
         
         // Calculate current scores for game state
         const scores = calculateScoresFromEvents(
@@ -178,6 +304,16 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
         ? 'bg-gradient-to-b from-amber-900 via-orange-900 to-red-900' 
         : 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900'
     }`}>
+      {/* Score Animation Overlay */}
+      {scoreAnimation && (
+        <ScoreAnimation
+          event={scoreAnimation}
+          teamA={teamA}
+          teamB={teamB}
+          onComplete={() => setScoreAnimation(null)}
+        />
+      )}
+      
       {/* Header */}
       <div className={`flex-shrink-0 px-3 py-2 flex items-center justify-between ${
         isFinal ? 'bg-gradient-to-r from-yellow-600/50 to-amber-600/50' : 'bg-black/40'
@@ -191,9 +327,17 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
             {totalSets > 1 && ` • Set ${currentSetNum}/${totalSets}`}
           </span>
         </div>
-        <div className="flex items-center gap-1 text-lg font-mono bg-gray-800 px-3 py-1 rounded">
-          <Timer className="h-4 w-4 text-red-400" />
-          <span className="text-red-400">{formatDuration(elapsedSeconds)}</span>
+        <div className="flex items-center gap-3">
+          {/* Viewer Count */}
+          <div className="flex items-center gap-1 text-sm bg-gray-800/80 px-2 py-1 rounded">
+            <Eye className="h-3 w-3 text-green-400" />
+            <span className="text-green-400 font-medium">{viewerCount}</span>
+          </div>
+          {/* Timer */}
+          <div className="flex items-center gap-1 text-lg font-mono bg-gray-800 px-3 py-1 rounded">
+            <Timer className="h-4 w-4 text-red-400" />
+            <span className="text-red-400">{formatDuration(elapsedSeconds)}</span>
+          </div>
         </div>
       </div>
 
