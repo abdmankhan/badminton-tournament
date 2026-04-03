@@ -285,8 +285,11 @@ async function handlePlayoffProgression(completedMatch, tournament) {
   
   else if (matchType === 'final') {
     // Tournament complete!
+    const winningTeam = await Team.findById(winnerId);
     tournament.status = 'completed';
+    tournament.winnerId = winnerId;
+    tournament.winnerName = winningTeam?.name || 'Unknown';
     await tournament.save();
-    console.log(`🏆 Tournament complete! Champion: ${winnerId}`);
+    console.log(`🏆 Tournament complete! Champion: ${winningTeam?.name}`);
   }
 }

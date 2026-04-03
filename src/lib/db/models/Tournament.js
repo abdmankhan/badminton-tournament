@@ -46,6 +46,14 @@ const TournamentSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Tournament winner (set when completed)
+  winnerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team',
+  },
+  winnerName: {
+    type: String,
+  },
 }, {
   timestamps: true,
 });

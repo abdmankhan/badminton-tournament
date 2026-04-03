@@ -626,6 +626,32 @@ export default function ViewerTournament({ params }) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Tournament Complete - Congratulations Banner */}
+        {tournament.status === 'completed' && finalMatch && finalMatch.winnerId && (
+          <Card className="mb-6 border-4 border-yellow-400 bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 shadow-xl">
+            <CardContent className="py-6">
+              <div className="text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="relative">
+                    <Trophy className="h-20 w-20 text-yellow-500 animate-bounce" />
+                    <div className="absolute -top-2 -right-2 text-4xl">🎉</div>
+                    <div className="absolute -top-2 -left-2 text-4xl">🎊</div>
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold text-yellow-800 mb-2">🏆 Tournament Complete! 🏆</h2>
+                <p className="text-xl text-yellow-700 mb-4">
+                  Congratulations to <span className="font-bold text-2xl">{teams.find(t => (t._id || t.id)?.toString() === finalMatch.winnerId?.toString())?.name}</span>
+                </p>
+                <div className="flex justify-center gap-2 text-yellow-600">
+                  <span className="text-2xl">🥇</span>
+                  <p className="text-lg font-semibold">Tournament Champions!</p>
+                  <span className="text-2xl">🥇</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Links - Temporarily hidden
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Link href={`/viewer/tournaments/${id}/analytics`}>

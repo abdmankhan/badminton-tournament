@@ -81,6 +81,14 @@ export default function ViewerDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {tournament.status === 'completed' && tournament.winnerId && (
+                    <div className="mb-4 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400 rounded-lg">
+                      <div className="flex items-center gap-2 text-yellow-800 font-semibold">
+                        <Trophy className="h-5 w-5 text-yellow-600" />
+                        <span>Champion: {tournament.winnerName || 'Winner'}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
