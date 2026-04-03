@@ -195,11 +195,13 @@ async function generatePlayoffs(tournament, tournamentId) {
     events: [],
   });
 
-  // Create Qualifier 2: Teams TBD (placeholder with rank1/rank3, will be updated)
+  // Create Qualifier 2: Teams TBD - Q1 Loser vs Eliminator Winner
+  // teamA will be set when Q1 completes (Q1 loser)
+  // teamB will be set when Eliminator completes (Eliminator winner)
   const qualifier2 = await Match.create({
     tournamentId,
-    teamA: rank1._id, // Placeholder - Q1 Loser
-    teamB: rank3._id, // Placeholder - Eliminator Winner
+    teamA: null, // TBD - Q1 Loser
+    teamB: null, // TBD - Eliminator Winner
     matchType: "qualifier2",
     matchNumber: 0,
     setCount,
@@ -210,11 +212,13 @@ async function generatePlayoffs(tournament, tournamentId) {
     events: [],
   });
 
-  // Create Final: Teams TBD (placeholder, will be updated)
+  // Create Final: Teams TBD - Q1 Winner vs Q2 Winner
+  // teamA will be set when Q1 completes (Q1 winner)
+  // teamB will be set when Q2 completes (Q2 winner)
   const finalMatch = await Match.create({
     tournamentId,
-    teamA: rank1._id, // Placeholder - Q1 Winner
-    teamB: rank2._id, // Placeholder - Q2 Winner
+    teamA: null, // TBD - Q1 Winner
+    teamB: null, // TBD - Q2 Winner
     matchType: "final",
     matchNumber: 0,
     setCount,
