@@ -247,8 +247,11 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
     teamA._id,
     teamB._id
   );
-  const teamAScore = scores.teamA[1] || 0;
-  const teamBScore = scores.teamB[1] || 0;
+  
+  // Multi-set support - get current set number
+  const currentSetNum = match.currentSet || 1;
+  const teamAScore = scores.teamA[currentSetNum] || 0;
+  const teamBScore = scores.teamB[currentSetNum] || 0;
   const gameState = getGameState(teamAScore, teamBScore);
   const playerCredits = scores.playerCredits || {};
   
@@ -286,10 +289,9 @@ function LiveMatchViewer({ matchId, teams, onNoMatch }) {
     }
   };
 
-  // Multi-set support
+  // Multi-set support (currentSetNum already defined above)
   const isFinal = match.matchType === 'final';
   const totalSets = match.setCount || 1;
-  const currentSetNum = match.currentSet || 1;
   const completedSets = (match.sets || []).filter(s => s.isComplete);
   const setsWonA = completedSets.filter(s => 
     s.winnerId === teamA._id || s.winnerId?.toString() === teamA._id?.toString()
