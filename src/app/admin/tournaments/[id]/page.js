@@ -497,26 +497,44 @@ export default function TournamentDashboard({ params }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {standings.map((s, idx) => (
-                        <tr key={s.teamId} className={`border-b ${idx < 2 ? 'bg-green-50' : ''}`}>
-                          <td className="py-3 px-2 font-medium">{s.rank}</td>
-                          <td className="py-3 px-2 font-medium">{s.teamName}</td>
-                          <td className="text-center py-3 px-2">{s.matchesPlayed}</td>
-                          <td className="text-center py-3 px-2">{s.wins}</td>
-                          <td className="text-center py-3 px-2">{s.losses}</td>
-                          <td className="text-center py-3 px-2 font-bold">{s.leaguePoints}</td>
-                          <td className="text-center py-3 px-2">{s.pointsFor}</td>
-                          <td className="text-center py-3 px-2">{s.pointsAgainst}</td>
-                          <td className="text-center py-3 px-2">{s.pointDifference > 0 ? '+' : ''}{s.pointDifference}</td>
-                          <td className="text-center py-3 px-2">{s.efficiencyScore.toFixed(3)}</td>
-                        </tr>
-                      ))}
+                      {standings.map((s, idx) => {
+                        // For playoffs: highlight top 4, for regular: highlight top 2
+                        const qualifiesForPlayoffs = isPlayoffs ? idx < 4 : idx < 2;
+                        const rowClass = qualifiesForPlayoffs 
+                          ? (idx < 2 ? 'bg-green-100' : 'bg-green-50') 
+                          : '';
+                        return (
+                          <tr key={s.teamId} className={`border-b ${rowClass}`}>
+                            <td className="py-3 px-2 font-medium">
+                              {s.rank}
+                              {isPlayoffs && idx < 4 && (
+                                <span className="ml-1 text-xs">
+                                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '4️⃣'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 font-medium">{s.teamName}</td>
+                            <td className="text-center py-3 px-2">{s.matchesPlayed}</td>
+                            <td className="text-center py-3 px-2">{s.wins}</td>
+                            <td className="text-center py-3 px-2">{s.losses}</td>
+                            <td className="text-center py-3 px-2 font-bold">{s.leaguePoints}</td>
+                            <td className="text-center py-3 px-2">{s.pointsFor}</td>
+                            <td className="text-center py-3 px-2">{s.pointsAgainst}</td>
+                            <td className="text-center py-3 px-2">{s.pointDifference > 0 ? '+' : ''}{s.pointDifference}</td>
+                            <td className="text-center py-3 px-2">{s.efficiencyScore.toFixed(3)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
                 <div className="mt-4 text-xs text-muted-foreground">
                   <p>P = Played, W = Won, L = Lost, Pts = League Points, PF = Points For, PA = Points Against, PD = Point Diff, TES = Tournament Efficiency Score</p>
-                  <p className="mt-1">Top 2 teams (highlighted) qualify for the final.</p>
+                  {isPlayoffs ? (
+                    <p className="mt-1 text-purple-600 font-medium">🏆 Top 4 teams qualify for IPL-style playoffs</p>
+                  ) : (
+                    <p className="mt-1">Top 2 teams (highlighted) qualify for the final.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -524,39 +542,51 @@ export default function TournamentDashboard({ params }) {
 
           <TabsContent value="teams">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {teams.map((team) => (
-                <Card key={team._id || team.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{team.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Players:</p>
-                      {team.players?.filter(p => !p.isSubstitute).map((player, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                            {player.name?.charAt(0)}
-                          </div>
-                          {player.name}
-                        </div>
-                      ))}
-                      {team.players?.filter(p => p.isSubstitute).length > 0 && (
-                        <>
-                          <p className="text-sm font-medium mt-4">Substitutes:</p>
-                          {team.players?.filter(p => p.isSubstitute).map((player, i) => (
-                            <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
-                                {player.name?.charAt(0)}
-                              </div>
-                              {player.name}
+              {teams.map((team, idx) => {
+                // Find team's position in standings for highlighting
+                const standingIdx = standings.findIndex(s => s.teamId?.toString() === (team._id || team.id)?.toString());
+                const isTop4 = isPlayoffs && standingIdx >= 0 && standingIdx < 4;
+                const rankBadge = isPlayoffs && standingIdx >= 0 && standingIdx < 4 
+                  ? ['🥇', '🥈', '🥉', '4️⃣'][standingIdx] 
+                  : null;
+                
+                return (
+                  <Card key={team._id || team.id} className={isTop4 ? 'ring-2 ring-green-400 bg-green-50/50' : ''}>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {rankBadge && <span className="text-sm">{rankBadge}</span>}
+                        {team.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Players:</p>
+                        {team.players?.filter(p => !p.isSubstitute).map((player, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                              {player.name?.charAt(0)}
                             </div>
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                            {player.name}
+                          </div>
+                        ))}
+                        {team.players?.filter(p => p.isSubstitute).length > 0 && (
+                          <>
+                            <p className="text-sm font-medium mt-4">Substitutes:</p>
+                            {team.players?.filter(p => p.isSubstitute).map((player, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
+                                  {player.name?.charAt(0)}
+                                </div>
+                                {player.name}
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 

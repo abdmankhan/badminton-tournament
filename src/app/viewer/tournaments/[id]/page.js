@@ -591,6 +591,14 @@ export default function ViewerTournament({ params }) {
   const leagueMatches = matches.filter(m => m.matchType === 'league');
   const completedMatches = leagueMatches.filter(m => m.status === 'completed');
   const liveMatch = matches.find(m => m.status === 'live');
+  
+  // Playoffs matches
+  const isPlayoffs = tournament.format === 'playoffs';
+  const qualifier1 = matches.find(m => m.matchType === 'qualifier1');
+  const eliminator = matches.find(m => m.matchType === 'eliminator');
+  const qualifier2 = matches.find(m => m.matchType === 'qualifier2');
+  const finalMatch = matches.find(m => m.matchType === 'final');
+  const playoffsGenerated = tournament.playoffsGenerated;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -649,7 +657,10 @@ export default function ViewerTournament({ params }) {
         {liveMatch && (
           <Card 
             className="mb-6 border-2 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => setShowLiveMatch(true)}
+            onClick={() => {
+              setLiveMatchId(liveMatch._id || liveMatch.id);
+              setShowLiveMatch(true);
+            }}
           >
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
@@ -661,6 +672,14 @@ export default function ViewerTournament({ params }) {
                     {teams.find(t => t._id?.toString() === liveMatch.teamA?.toString())?.name} vs{' '}
                     {teams.find(t => t._id?.toString() === liveMatch.teamB?.toString())?.name}
                   </span>
+                  {liveMatch.matchType !== 'league' && (
+                    <Badge variant="secondary" className="text-xs">
+                      {liveMatch.matchType === 'qualifier1' ? '🏅 Qualifier 1' :
+                       liveMatch.matchType === 'eliminator' ? '⚔️ Eliminator' :
+                       liveMatch.matchType === 'qualifier2' ? '🎯 Qualifier 2' :
+                       liveMatch.matchType === 'final' ? '🏆 Final' : ''}
+                    </Badge>
+                  )}
                 </div>
                 <Button size="sm" variant="destructive">
                   Watch Live 📺
@@ -680,8 +699,12 @@ export default function ViewerTournament({ params }) {
               <Calendar className="h-4 w-4 mr-2" />
               Matches
             </TabsTrigger>
-            <TabsTrigger value="players">
+            <TabsTrigger value="teams">
               <Users className="h-4 w-4 mr-2" />
+              Teams
+            </TabsTrigger>
+            <TabsTrigger value="players">
+              <Trophy className="h-4 w-4 mr-2" />
               Players
             </TabsTrigger>
           </TabsList>
@@ -710,45 +733,153 @@ export default function ViewerTournament({ params }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {standings.map((s, idx) => (
-                        <tr key={s.teamId} className={`border-b ${idx < 2 ? 'bg-green-50' : ''}`}>
-                          <td className="py-3 px-2 font-medium">{s.rank}</td>
-                          <td className="py-3 px-2 font-medium">{s.teamName}</td>
-                          <td className="text-center py-3 px-2">{s.matchesPlayed}</td>
-                          <td className="text-center py-3 px-2">{s.wins}</td>
-                          <td className="text-center py-3 px-2">{s.losses}</td>
-                          <td className="text-center py-3 px-2 font-bold">{s.leaguePoints}</td>
-                          <td className="text-center py-3 px-2">{s.pointsFor}</td>
-                          <td className="text-center py-3 px-2">{s.pointsAgainst}</td>
-                          <td className="text-center py-3 px-2">{s.pointDifference > 0 ? '+' : ''}{s.pointDifference}</td>
-                          <td className="text-center py-3 px-2">{s.efficiencyScore.toFixed(3)}</td>
-                        </tr>
-                      ))}
+                      {standings.map((s, idx) => {
+                        // For playoffs: highlight top 4, for regular: highlight top 2
+                        const qualifiesForPlayoffs = isPlayoffs ? idx < 4 : idx < 2;
+                        const rowClass = qualifiesForPlayoffs 
+                          ? (idx < 2 ? 'bg-green-100' : 'bg-green-50') 
+                          : '';
+                        return (
+                          <tr key={s.teamId} className={`border-b ${rowClass}`}>
+                            <td className="py-3 px-2 font-medium">
+                              {s.rank}
+                              {isPlayoffs && idx < 4 && (
+                                <span className="ml-1 text-xs">
+                                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '4️⃣'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 font-medium">{s.teamName}</td>
+                            <td className="text-center py-3 px-2">{s.matchesPlayed}</td>
+                            <td className="text-center py-3 px-2">{s.wins}</td>
+                            <td className="text-center py-3 px-2">{s.losses}</td>
+                            <td className="text-center py-3 px-2 font-bold">{s.leaguePoints}</td>
+                            <td className="text-center py-3 px-2">{s.pointsFor}</td>
+                            <td className="text-center py-3 px-2">{s.pointsAgainst}</td>
+                            <td className="text-center py-3 px-2">{s.pointDifference > 0 ? '+' : ''}{s.pointDifference}</td>
+                            <td className="text-center py-3 px-2">{s.efficiencyScore.toFixed(3)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
                 <div className="mt-4 text-xs text-muted-foreground">
-                  <p><strong>Ranking:</strong> League Points - TES - Head-to-Head - Point Difference - Points For</p>
+                  <p><strong>Ranking:</strong> League Points → TES → Head-to-Head → Point Difference → Points For</p>
                   <p className="mt-1"><strong>TES:</strong> Sum of (Points For - Points Against) / Match Duration for each match</p>
+                  {isPlayoffs ? (
+                    <p className="mt-1 text-purple-600 font-medium">🏆 Top 4 teams qualify for IPL-style playoffs</p>
+                  ) : (
+                    <p className="mt-1">Top 2 teams (highlighted) qualify for the final.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="matches">
+            {/* Playoffs Section for viewer */}
+            {isPlayoffs && playoffsGenerated && (
+              <Card className="mb-6 border-2 border-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-6 w-6 text-purple-600" />
+                    <CardTitle className="text-purple-800">🏆 IPL-Style Playoffs</CardTitle>
+                  </div>
+                  <CardDescription>Top 4 teams battle for the championship</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Playoffs bracket visualization */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Qualifier 1 */}
+                      {qualifier1 && (
+                        <ViewerPlayoffCard 
+                          match={qualifier1} 
+                          teams={teams} 
+                          title="Qualifier 1"
+                          subtitle="1st vs 2nd • Winner → Final"
+                          color="blue"
+                          onWatchLive={() => {
+                            if (qualifier1.status === 'live') {
+                              setLiveMatchId(qualifier1._id || qualifier1.id);
+                              setShowLiveMatch(true);
+                            }
+                          }}
+                        />
+                      )}
+                      
+                      {/* Eliminator */}
+                      {eliminator && (
+                        <ViewerPlayoffCard 
+                          match={eliminator} 
+                          teams={teams} 
+                          title="Eliminator"
+                          subtitle="3rd vs 4th • Loser OUT"
+                          color="red"
+                          onWatchLive={() => {
+                            if (eliminator.status === 'live') {
+                              setLiveMatchId(eliminator._id || eliminator.id);
+                              setShowLiveMatch(true);
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Qualifier 2 */}
+                    {qualifier2 && (
+                      <ViewerPlayoffCard 
+                        match={qualifier2} 
+                        teams={teams} 
+                        title="Qualifier 2"
+                        subtitle="Q1 Loser vs Eliminator Winner"
+                        color="orange"
+                        isPending={qualifier2.status === 'pending'}
+                        onWatchLive={() => {
+                          if (qualifier2.status === 'live') {
+                            setLiveMatchId(qualifier2._id || qualifier2.id);
+                            setShowLiveMatch(true);
+                          }
+                        }}
+                      />
+                    )}
+                    
+                    {/* Final */}
+                    {finalMatch && (
+                      <ViewerPlayoffCard 
+                        match={finalMatch} 
+                        teams={teams} 
+                        title="🏆 GRAND FINAL"
+                        subtitle="Q1 Winner vs Q2 Winner"
+                        color="gold"
+                        isFinal={true}
+                        isPending={finalMatch.status === 'pending'}
+                        onWatchLive={() => {
+                          if (finalMatch.status === 'live') {
+                            setLiveMatchId(finalMatch._id || finalMatch.id);
+                            setShowLiveMatch(true);
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
-                <CardTitle>Match Results</CardTitle>
+                <CardTitle>League Matches</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {matches.map((match, idx) => {
+                  {leagueMatches.map((match, idx) => {
                     const teamAData = teams.find(t => t._id?.toString() === match.teamA?.toString());
                     const teamBData = teams.find(t => t._id?.toString() === match.teamB?.toString());
                     const isLive = match.status === 'live';
                     const isCompleted = match.status === 'completed';
                     
-                    // Format match duration
                     const formatMatchDuration = (seconds) => {
                       if (!seconds) return '';
                       const mins = Math.floor(seconds / 60);
@@ -764,12 +895,15 @@ export default function ViewerTournament({ params }) {
                           isLive ? 'border-red-500 bg-red-50 cursor-pointer' : 
                           isCompleted ? 'bg-green-50/30' : ''
                         }`}
-                        onClick={() => isLive && setShowLiveMatch(true)}
+                        onClick={() => {
+                          if (isLive) {
+                            setLiveMatchId(match._id || match.id);
+                            setShowLiveMatch(true);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-4">
-                          <span className="text-sm text-muted-foreground w-8">
-                            {match.matchType === 'final' ? '🏆' : `#${match.matchNumber}`}
-                          </span>
+                          <span className="text-sm text-muted-foreground w-8">#{match.matchNumber}</span>
                           <div>
                             <div className={`font-medium ${match.winnerId?.toString() === teamAData?._id?.toString() ? 'text-green-600' : ''}`}>
                               {teamAData?.name || 'TBD'}
@@ -830,6 +964,66 @@ export default function ViewerTournament({ params }) {
                 <PlayerLeaderboard teams={teams} matches={matches} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="teams">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {teams.map((team, idx) => {
+                const standingIdx = standings.findIndex(s => s.teamId?.toString() === (team._id || team.id)?.toString());
+                const isTop4 = isPlayoffs && standingIdx >= 0 && standingIdx < 4;
+                const rankBadge = isPlayoffs && standingIdx >= 0 && standingIdx < 4 
+                  ? ['🥇', '🥈', '🥉', '4️⃣'][standingIdx] 
+                  : null;
+                
+                return (
+                  <Card key={team._id || team.id} className={isTop4 ? 'ring-2 ring-green-400 bg-green-50/50' : ''}>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {rankBadge && <span className="text-sm">{rankBadge}</span>}
+                        {team.photoUrl ? (
+                          <img src={team.photoUrl} alt={team.name} className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">
+                            {team.name?.charAt(0)}
+                          </div>
+                        )}
+                        {team.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Players:</p>
+                        {team.players?.filter(p => !p.isSubstitute).map((player, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            {player.photoUrl ? (
+                              <img src={player.photoUrl} alt={player.name} className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                                {player.name?.charAt(0)}
+                              </div>
+                            )}
+                            {player.name}
+                          </div>
+                        ))}
+                        {team.players?.filter(p => p.isSubstitute).length > 0 && (
+                          <>
+                            <p className="text-sm font-medium mt-4 text-muted-foreground">Substitutes:</p>
+                            {team.players?.filter(p => p.isSubstitute).map((player, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs">
+                                  {player.name?.charAt(0)}
+                                </div>
+                                {player.name}
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </TabsContent>
         </Tabs>
       </main>
@@ -923,6 +1117,88 @@ function PlayerLeaderboard({ teams, matches }) {
           No player stats yet. Complete some matches first!
         </div>
       )}
+    </div>
+  );
+}
+
+// Viewer Playoff Match Card Component
+function ViewerPlayoffCard({ match, teams, title, subtitle, color, isFinal, isPending, onWatchLive }) {
+  const teamA = teams.find(t => (t._id || t.id)?.toString() === (match.teamA?._id || match.teamA)?.toString());
+  const teamB = teams.find(t => (t._id || t.id)?.toString() === (match.teamB?._id || match.teamB)?.toString());
+  
+  const colorClasses = {
+    blue: 'border-blue-400 bg-blue-50',
+    red: 'border-red-400 bg-red-50',
+    orange: 'border-orange-400 bg-orange-50',
+    gold: 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-amber-50 shadow-lg',
+  };
+  
+  const headerColors = {
+    blue: 'text-blue-700',
+    red: 'text-red-700',
+    orange: 'text-orange-700',
+    gold: 'text-yellow-700',
+  };
+  
+  const isLive = match.status === 'live';
+  const isCompleted = match.status === 'completed';
+  
+  return (
+    <div 
+      className={`border-2 rounded-lg p-4 ${colorClasses[color] || 'border-gray-300 bg-gray-50'} ${isLive ? 'cursor-pointer' : ''}`}
+      onClick={() => isLive && onWatchLive?.()}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h4 className={`font-bold ${headerColors[color] || 'text-gray-700'}`}>{title}</h4>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <Badge variant={
+          isCompleted ? 'success' :
+          isLive ? 'destructive' :
+          isPending ? 'outline' :
+          'secondary'
+        } className={isLive ? 'animate-pulse' : ''}>
+          {isPending ? 'Waiting' : isLive ? '🔴 LIVE' : match.status}
+        </Badge>
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-center">
+            <div className={`font-semibold ${match.winnerId?.toString() === teamA?._id?.toString() ? 'text-green-600' : ''}`}>
+              {isPending ? 'TBD' : (teamA?.name || 'TBD')}
+            </div>
+            {isCompleted && (
+              <div className="text-xs text-muted-foreground">
+                {match.sets?.map(s => s.teamAScore).join(' - ')}
+              </div>
+            )}
+          </div>
+          <span className="text-muted-foreground font-bold">vs</span>
+          <div className="text-center">
+            <div className={`font-semibold ${match.winnerId?.toString() === teamB?._id?.toString() ? 'text-green-600' : ''}`}>
+              {isPending ? 'TBD' : (teamB?.name || 'TBD')}
+            </div>
+            {isCompleted && (
+              <div className="text-xs text-muted-foreground">
+                {match.sets?.map(s => s.teamBScore).join(' - ')}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {isLive && (
+          <Button size="sm" variant="destructive">
+            Watch Live 📺
+          </Button>
+        )}
+        {isCompleted && (
+          <div className="text-sm font-medium text-green-600">
+            ✓ {teams.find(t => (t._id || t.id)?.toString() === match.winnerId?.toString())?.name} won
+          </div>
+        )}
+      </div>
     </div>
   );
 }
