@@ -78,7 +78,7 @@ const MatchSchema = new mongoose.Schema({
   },
   matchType: {
     type: String,
-    enum: ['league', 'semifinal', 'final'],
+    enum: ['league', 'semifinal', 'final', 'qualifier1', 'eliminator', 'qualifier2'],
     default: 'league',
   },
   matchNumber: {
@@ -99,7 +99,7 @@ const MatchSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['scheduled', 'live', 'paused', 'completed'],
+    enum: ['scheduled', 'live', 'paused', 'completed', 'pending'],
     default: 'scheduled',
   },
   sets: [SetScoreSchema],

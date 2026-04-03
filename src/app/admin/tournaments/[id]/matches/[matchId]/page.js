@@ -44,10 +44,22 @@ export default function MatchScoring({ params }) {
   const lastSyncedEventsRef = useRef(0);
 
   // Match configuration
-  const isFinal = currentMatch?.matchType === "final";
+  const matchType = currentMatch?.matchType;
+  const isFinal = matchType === "final";
+  const isPlayoffMatch = ['qualifier1', 'eliminator', 'qualifier2', 'final'].includes(matchType);
   const totalSets = currentMatch?.setCount || 1;
   const setsToWin = Math.ceil(totalSets / 2);
   const currentSetNum = currentMatch?.currentSet || 1;
+
+  const getMatchTitle = () => {
+    switch (matchType) {
+      case 'qualifier1': return '🏅 Qualifier 1';
+      case 'eliminator': return '⚔️ Eliminator';
+      case 'qualifier2': return '🎯 Qualifier 2';
+      case 'final': return '🏆 GRAND FINAL';
+      default: return `Match #${currentMatch?.matchNumber}`;
+    }
+  };
 
   useEffect(() => {
     loadMatchData();
@@ -364,29 +376,29 @@ export default function MatchScoring({ params }) {
 
   return (
     <div className={`h-[100dvh] flex flex-col overflow-hidden select-none ${
-      isFinal ? 'bg-gradient-to-b from-amber-50 to-orange-50' : 'bg-gray-100'
+      isPlayoffMatch ? 'bg-gradient-to-b from-amber-50 to-orange-50' : 'bg-gray-100'
     }`}>
       {/* Header */}
       <header className={`border-b px-2 py-1 flex items-center justify-between shrink-0 ${
-        isFinal ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-white'
+        isPlayoffMatch ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : 'bg-white'
       }`}>
         <Link href={`/admin/tournaments/${tournamentId}`}>
-          <Button variant="ghost" size="icon" className={`h-8 w-8 ${isFinal ? 'text-white hover:bg-white/20' : ''}`}>
+          <Button variant="ghost" size="icon" className={`h-8 w-8 ${isPlayoffMatch ? 'text-white hover:bg-white/20' : ''}`}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div className="flex items-center gap-2">
           {isFinal && <Crown className="h-4 w-4" />}
           <span className="font-semibold text-sm">
-            {isFinal ? '🏆 GRAND FINAL' : `Match #${currentMatch?.matchNumber}`}
+            {getMatchTitle()}
           </span>
           {totalSets > 1 && (
-            <Badge variant={isFinal ? "secondary" : "outline"} className="text-xs">
+            <Badge variant={isPlayoffMatch ? "secondary" : "outline"} className="text-xs">
               Set {currentSetNum}/{totalSets}
             </Badge>
           )}
         </div>
-        <Button variant="ghost" size="icon" className={`h-8 w-8 ${isFinal ? 'text-white hover:bg-white/20' : ''}`} onClick={handleUndo} disabled={gameState.isGameOver}>
+        <Button variant="ghost" size="icon" className={`h-8 w-8 ${isPlayoffMatch ? 'text-white hover:bg-white/20' : ''}`} onClick={handleUndo} disabled={gameState.isGameOver}>
           <RotateCcw className="h-4 w-4" />
         </Button>
       </header>
@@ -394,7 +406,7 @@ export default function MatchScoring({ params }) {
       {/* Sets Score for multi-set matches */}
       {totalSets > 1 && (
         <div className={`px-4 py-2 flex items-center justify-center gap-4 shrink-0 ${
-          isFinal ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white' : 'bg-gray-800 text-white'
+          isPlayoffMatch ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white' : 'bg-gray-800 text-white'
         }`}>
           <div className="text-center">
             <div className="text-xs opacity-80">{teamA?.name}</div>

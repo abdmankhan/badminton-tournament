@@ -77,10 +77,19 @@ export async function PUT(request, { params }) {
     }
 
     if (data.status === "completed" && data.winnerId) {
-      await updateTeamStats(match);
+      // Only update team stats for league matches
+      if (match.matchType === 'league') {
+        await updateTeamStats(match);
+      }
 
-      // Check if all league matches are complete and generate final if needed
-      await checkAndGenerateFinal(match.tournamentId);
+      // Check tournament format and handle accordingly
+      const tournament = await Tournament.findById(match.tournamentId);
+      
+      if (tournament.format === 'playoffs') {
+        await handlePlayoffProgression(match, tournament);
+      } else if (tournament.format === 'round-robin-final') {
+        await checkAndGenerateFinal(match.tournamentId);
+      }
     }
 
     return NextResponse.json(match);
@@ -207,4 +216,77 @@ async function checkAndGenerateFinal(tournamentId) {
   await tournament.save();
 
   console.log(`Final match created: ${finalist1.name} vs ${finalist2.name}`);
+}
+
+/**
+ * Handle IPL-Style Playoff Progression
+ * 
+ * When a playoff match completes:
+ * - Qualifier 1 complete: Winner → Final (teamA), Loser → Qualifier 2 (teamA)
+ * - Eliminator complete: Winner → Qualifier 2 (teamB), Loser → OUT
+ * - Qualifier 2 complete: Winner → Final (teamB), Loser → OUT
+ */
+async function handlePlayoffProgression(completedMatch, tournament) {
+  const { matchType, winnerId, teamA, teamB } = completedMatch;
+  const tournamentId = tournament._id;
+  
+  // Determine loser
+  const loserId = winnerId.toString() === teamA.toString() ? teamB : teamA;
+  
+  // Get all playoff matches
+  const allMatches = await Match.find({ tournamentId });
+  const qualifier1 = allMatches.find(m => m.matchType === 'qualifier1');
+  const eliminator = allMatches.find(m => m.matchType === 'eliminator');
+  const qualifier2 = allMatches.find(m => m.matchType === 'qualifier2');
+  const finalMatch = allMatches.find(m => m.matchType === 'final');
+  
+  if (matchType === 'qualifier1') {
+    // Q1 Winner goes to Final (teamA position)
+    // Q1 Loser goes to Qualifier 2 (teamA position)
+    if (finalMatch) {
+      await Match.findByIdAndUpdate(finalMatch._id, { teamA: winnerId });
+    }
+    if (qualifier2) {
+      await Match.findByIdAndUpdate(qualifier2._id, { teamA: loserId });
+      
+      // Check if Eliminator is also complete - if so, Q2 can start
+      if (eliminator?.status === 'completed') {
+        await Match.findByIdAndUpdate(qualifier2._id, { status: 'scheduled' });
+      }
+    }
+    console.log(`Qualifier 1 complete: ${winnerId} → Final, ${loserId} → Qualifier 2`);
+  }
+  
+  else if (matchType === 'eliminator') {
+    // Eliminator Winner goes to Qualifier 2 (teamB position)
+    // Eliminator Loser is OUT
+    if (qualifier2) {
+      await Match.findByIdAndUpdate(qualifier2._id, { teamB: winnerId });
+      
+      // Check if Q1 is also complete - if so, Q2 can start
+      if (qualifier1?.status === 'completed') {
+        await Match.findByIdAndUpdate(qualifier2._id, { status: 'scheduled' });
+      }
+    }
+    console.log(`Eliminator complete: ${winnerId} → Qualifier 2, ${loserId} → ELIMINATED`);
+  }
+  
+  else if (matchType === 'qualifier2') {
+    // Q2 Winner goes to Final (teamB position)
+    // Q2 Loser is OUT
+    if (finalMatch) {
+      await Match.findByIdAndUpdate(finalMatch._id, { 
+        teamB: winnerId,
+        status: 'scheduled' // Final can now start
+      });
+    }
+    console.log(`Qualifier 2 complete: ${winnerId} → Final, ${loserId} → ELIMINATED`);
+  }
+  
+  else if (matchType === 'final') {
+    // Tournament complete!
+    tournament.status = 'completed';
+    await tournament.save();
+    console.log(`🏆 Tournament complete! Champion: ${winnerId}`);
+  }
 }

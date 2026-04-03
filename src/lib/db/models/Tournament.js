@@ -13,7 +13,7 @@ const TournamentSchema = new mongoose.Schema({
   },
   format: {
     type: String,
-    enum: ['round-robin-final', 'round-robin-semifinal-final', 'knockout'],
+    enum: ['round-robin-final', 'round-robin-semifinal-final', 'knockout', 'playoffs'],
     default: 'round-robin-final',
   },
   numberOfTeams: {
@@ -41,6 +41,11 @@ const TournamentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Match',
   }],
+  // Playoffs-specific tracking
+  playoffsGenerated: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });

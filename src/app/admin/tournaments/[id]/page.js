@@ -114,6 +114,32 @@ export default function TournamentDashboard({ params }) {
     }
   }
 
+  async function handleGeneratePlayoffs() {
+    if (!tournament || teams.length < 4) {
+      toast.error('Need at least 4 teams for playoffs');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/tournaments/${id}/generate-fixtures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-playoffs' }),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success('Playoffs generated successfully! 🏆');
+        loadTournamentData();
+      } else {
+        throw new Error(data.error || 'Failed to generate playoffs');
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -140,6 +166,13 @@ export default function TournamentDashboard({ params }) {
   const completedMatches = leagueMatches.filter(m => m.status === 'completed');
   const liveMatch = matches.find(m => m.status === 'live');
   const allLeagueCompleted = leagueMatches.length > 0 && completedMatches.length === leagueMatches.length;
+
+  // Playoffs matches
+  const qualifier1 = matches.find(m => m.matchType === 'qualifier1');
+  const eliminator = matches.find(m => m.matchType === 'eliminator');
+  const qualifier2 = matches.find(m => m.matchType === 'qualifier2');
+  const isPlayoffs = tournament.format === 'playoffs';
+  const playoffsGenerated = tournament.playoffsGenerated;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -213,8 +246,96 @@ export default function TournamentDashboard({ params }) {
           </TabsList>
 
           <TabsContent value="matches">
-            {/* Final Match Banner */}
-            {finalMatch && (
+            {/* League Stage Completion Banner - Show Generate Playoffs for playoffs format */}
+            {allLeagueCompleted && !playoffsGenerated && isPlayoffs && (
+              <Card className="mb-6 border-2 border-purple-500 bg-purple-50">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-center gap-3 text-purple-800">
+                    <Trophy className="h-6 w-6" />
+                    <span className="font-semibold">All league matches completed! Ready to generate IPL-style playoffs.</span>
+                  </div>
+                  <div className="flex justify-center mt-3">
+                    <Button onClick={handleGeneratePlayoffs} className="bg-purple-600 hover:bg-purple-700">
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Generate Playoffs
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Playoffs Section */}
+            {isPlayoffs && playoffsGenerated && (
+              <Card className="mb-6 border-2 border-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-6 w-6 text-purple-600" />
+                    <CardTitle className="text-purple-800">🏆 IPL-Style Playoffs</CardTitle>
+                  </div>
+                  <CardDescription>Top 4 teams battle for the championship</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Playoffs bracket visualization */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Qualifier 1 */}
+                      {qualifier1 && (
+                        <PlayoffMatchCard 
+                          match={qualifier1} 
+                          teams={teams} 
+                          title="Qualifier 1"
+                          subtitle="1st vs 2nd • Winner → Final"
+                          tournamentId={id}
+                          color="blue"
+                        />
+                      )}
+                      
+                      {/* Eliminator */}
+                      {eliminator && (
+                        <PlayoffMatchCard 
+                          match={eliminator} 
+                          teams={teams} 
+                          title="Eliminator"
+                          subtitle="3rd vs 4th • Loser OUT"
+                          tournamentId={id}
+                          color="red"
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Qualifier 2 */}
+                    {qualifier2 && (
+                      <PlayoffMatchCard 
+                        match={qualifier2} 
+                        teams={teams} 
+                        title="Qualifier 2"
+                        subtitle="Q1 Loser vs Eliminator Winner"
+                        tournamentId={id}
+                        color="orange"
+                        isPending={qualifier2.status === 'pending'}
+                      />
+                    )}
+                    
+                    {/* Final */}
+                    {finalMatch && (
+                      <PlayoffMatchCard 
+                        match={finalMatch} 
+                        teams={teams} 
+                        title="🏆 GRAND FINAL"
+                        subtitle="Q1 Winner vs Q2 Winner"
+                        tournamentId={id}
+                        color="gold"
+                        isFinal={true}
+                        isPending={finalMatch.status === 'pending'}
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Final Match Banner (for non-playoffs format) */}
+            {finalMatch && !isPlayoffs && (
               <Card className="mb-6 border-2 border-yellow-500 bg-yellow-50">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
@@ -265,7 +386,7 @@ export default function TournamentDashboard({ params }) {
               </Card>
             )}
 
-            {/* League Stage Completion Banner */}
+            {/* League Stage Completion Banner for round-robin-final format */}
             {allLeagueCompleted && !finalMatch && tournament.format === 'round-robin-final' && (
               <Card className="mb-6 border-2 border-green-500 bg-green-50">
                 <CardContent className="py-4">
@@ -280,6 +401,7 @@ export default function TournamentDashboard({ params }) {
               </Card>
             )}
             
+            {/* League Matches */}
             <Card>
               <CardHeader>
                 <CardTitle>League Matches</CardTitle>
@@ -557,5 +679,90 @@ function PlayerLeaderboard({ teams, matches }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Playoff Match Card Component
+function PlayoffMatchCard({ match, teams, title, subtitle, tournamentId, color, isFinal, isPending }) {
+  const teamA = teams.find(t => (t._id || t.id)?.toString() === (match.teamA?._id || match.teamA)?.toString());
+  const teamB = teams.find(t => (t._id || t.id)?.toString() === (match.teamB?._id || match.teamB)?.toString());
+  
+  const colorClasses = {
+    blue: 'border-blue-400 bg-blue-50',
+    red: 'border-red-400 bg-red-50',
+    orange: 'border-orange-400 bg-orange-50',
+    gold: 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-amber-50 shadow-lg',
+  };
+  
+  const headerColors = {
+    blue: 'text-blue-700',
+    red: 'text-red-700',
+    orange: 'text-orange-700',
+    gold: 'text-yellow-700',
+  };
+  
+  return (
+    <div className={`border-2 rounded-lg p-4 ${colorClasses[color] || 'border-gray-300 bg-gray-50'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h4 className={`font-bold ${headerColors[color] || 'text-gray-700'}`}>{title}</h4>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <Badge variant={
+          match.status === 'completed' ? 'success' :
+          match.status === 'live' ? 'destructive' :
+          match.status === 'pending' ? 'outline' :
+          'secondary'
+        } className={match.status === 'live' ? 'animate-pulse' : ''}>
+          {match.status === 'pending' ? 'Waiting' : match.status}
+        </Badge>
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-center">
+            <div className={`font-semibold ${match.winnerId?.toString() === teamA?._id?.toString() ? 'text-green-600' : ''}`}>
+              {isPending ? 'TBD' : (teamA?.name || 'TBD')}
+            </div>
+            {match.status === 'completed' && (
+              <div className="text-xs text-muted-foreground">
+                {match.sets?.map(s => s.teamAScore).join(' - ')}
+              </div>
+            )}
+          </div>
+          <span className="text-muted-foreground font-bold">vs</span>
+          <div className="text-center">
+            <div className={`font-semibold ${match.winnerId?.toString() === teamB?._id?.toString() ? 'text-green-600' : ''}`}>
+              {isPending ? 'TBD' : (teamB?.name || 'TBD')}
+            </div>
+            {match.status === 'completed' && (
+              <div className="text-xs text-muted-foreground">
+                {match.sets?.map(s => s.teamBScore).join(' - ')}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {match.status === 'scheduled' && !isPending && (
+          <Link href={`/admin/tournaments/${tournamentId}/matches/${match._id || match.id}`}>
+            <Button size="sm" variant={isFinal ? 'warning' : 'default'}>
+              {isFinal ? '🏆 Start Final' : 'Start'}
+            </Button>
+          </Link>
+        )}
+        {match.status === 'live' && (
+          <Link href={`/admin/tournaments/${tournamentId}/matches/${match._id || match.id}`}>
+            <Button size="sm" variant="destructive">
+              Continue
+            </Button>
+          </Link>
+        )}
+        {match.status === 'completed' && (
+          <div className="text-sm font-medium text-green-600">
+            ✓ {teams.find(t => (t._id || t.id)?.toString() === match.winnerId?.toString())?.name} won
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
