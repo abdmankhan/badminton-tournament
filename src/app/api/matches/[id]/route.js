@@ -192,11 +192,11 @@ async function checkAndGenerateFinal(tournamentId) {
     teamB: finalist2._id,
     matchType: "final",
     matchNumber: 0, // Special number for final
-    setCount: tournament.config?.finalSetCount || 3,
+    setCount: tournament.finalSetCount || 3,
     currentSet: 1,
     status: "scheduled",
     sets: Array.from(
-      { length: tournament.config?.finalSetCount || 3 },
+      { length: tournament.finalSetCount || 3 },
       (_, idx) => ({
         setNumber: idx + 1,
         teamAScore: 0,

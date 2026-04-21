@@ -400,6 +400,9 @@ export default function NewTournament() {
                       <SelectItem value="round-robin-semifinal-final">
                         Round Robin + Semis + Final
                       </SelectItem>
+                      <SelectItem value="playoffs">
+                        IPL-Style Playoffs (League + Top 4)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

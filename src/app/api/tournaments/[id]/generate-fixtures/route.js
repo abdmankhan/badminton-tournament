@@ -157,7 +157,9 @@ async function generatePlayoffs(tournament, tournamentId) {
   const rank3 = teams[2];
   const rank4 = teams[3];
 
-  const setCount = tournament.finalSetCount || 3;
+  // Only the final match is best-of-3; all other playoff matches are single set
+  const finalSetCount = tournament.finalSetCount || 3;
+  const playoffSetCount = 1;
   const createSetArray = (count) => Array.from({ length: count }, (_, idx) => ({
     setNumber: idx + 1,
     teamAScore: 0,
@@ -165,37 +167,37 @@ async function generatePlayoffs(tournament, tournamentId) {
     isComplete: false,
   }));
 
-  // Create Qualifier 1: Rank 1 vs Rank 2
+  // Create Qualifier 1: Rank 1 vs Rank 2 (single set)
   const qualifier1 = await Match.create({
     tournamentId,
     teamA: rank1._id,
     teamB: rank2._id,
     matchType: "qualifier1",
     matchNumber: 0,
-    setCount,
+    setCount: playoffSetCount,
     currentSet: 1,
     status: "scheduled",
-    sets: createSetArray(setCount),
+    sets: createSetArray(playoffSetCount),
     timerState: { status: "stopped", elapsedSeconds: 0 },
     events: [],
   });
 
-  // Create Eliminator: Rank 3 vs Rank 4
+  // Create Eliminator: Rank 3 vs Rank 4 (single set)
   const eliminator = await Match.create({
     tournamentId,
     teamA: rank3._id,
     teamB: rank4._id,
     matchType: "eliminator",
     matchNumber: 0,
-    setCount,
+    setCount: playoffSetCount,
     currentSet: 1,
     status: "scheduled",
-    sets: createSetArray(setCount),
+    sets: createSetArray(playoffSetCount),
     timerState: { status: "stopped", elapsedSeconds: 0 },
     events: [],
   });
 
-  // Create Qualifier 2: Teams TBD - Q1 Loser vs Eliminator Winner
+  // Create Qualifier 2: Teams TBD - Q1 Loser vs Eliminator Winner (single set)
   // teamA will be set when Q1 completes (Q1 loser)
   // teamB will be set when Eliminator completes (Eliminator winner)
   const qualifier2 = await Match.create({
@@ -204,15 +206,15 @@ async function generatePlayoffs(tournament, tournamentId) {
     teamB: null, // TBD - Eliminator Winner
     matchType: "qualifier2",
     matchNumber: 0,
-    setCount,
+    setCount: playoffSetCount,
     currentSet: 1,
     status: "pending", // Can't start until Q1 and Eliminator complete
-    sets: createSetArray(setCount),
+    sets: createSetArray(playoffSetCount),
     timerState: { status: "stopped", elapsedSeconds: 0 },
     events: [],
   });
 
-  // Create Final: Teams TBD - Q1 Winner vs Q2 Winner
+  // Create Final: Teams TBD - Q1 Winner vs Q2 Winner (best of finalSetCount)
   // teamA will be set when Q1 completes (Q1 winner)
   // teamB will be set when Q2 completes (Q2 winner)
   const finalMatch = await Match.create({
@@ -221,10 +223,10 @@ async function generatePlayoffs(tournament, tournamentId) {
     teamB: null, // TBD - Q2 Winner
     matchType: "final",
     matchNumber: 0,
-    setCount,
+    setCount: finalSetCount,
     currentSet: 1,
     status: "pending", // Can't start until Q1 and Q2 complete
-    sets: createSetArray(setCount),
+    sets: createSetArray(finalSetCount),
     timerState: { status: "stopped", elapsedSeconds: 0 },
     events: [],
   });

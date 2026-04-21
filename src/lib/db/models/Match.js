@@ -69,12 +69,12 @@ const MatchSchema = new mongoose.Schema({
   teamA: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team',
-    required: true,
+    default: null,
   },
   teamB: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team',
-    required: true,
+    default: null,
   },
   matchType: {
     type: String,
